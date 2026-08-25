@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # 🗄️ Base de Datos PostgreSQL
+  sansah-db:
+    image: postgres:17-alpine
+    container_name: sansah_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sansah_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sansah_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-sansah_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - sansah_pgdata:/var/lib/postgresql/data
+    networks:
+      - sansah-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sansah_user} -d ${POSTGRES_DB:-sansah_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ⚙️ Backend API Node.js + Express + Prisma
+  sansah-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sansah_server
+    restart: always
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sansah_user}:${POSTGRES_PASSWORD:-sansah_pass_2026}@sansah-db:5432/${POSTGRES_DB:-sansah_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-sansah_jwt_secret_key_2026}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN}
+    ports:
+      - "3001:3000"
+    depends_on:
+      sansah-db:
+        condition: service_healthy
+    networks:
+      - sansah-network
+
+  # 🛒 Frontend Tienda Client (React + Vite)
+  sansah-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: sansah_client
+    restart: always
+    ports:
+      - "8083:80"
+    networks:
+      - sansah-network
+
+  # 🖥️ Panel Admin (Vue 3 + Vite)
+  sansah-admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: sansah_admin
+    restart: always
+    ports:
+      - "8084:80"
+    networks:
+      - sansah-network
+
+  # 🌐 Landing Page (Vue 3 + Vite)
+  sansah-landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: sansah_landing
+    restart: always
+    ports:
+      - "8085:80"
+    networks:
+      - sansah-network
+
+volumes:
+  sansah_pgdata:
+    driver: local
+
+networks:
+  sansah-network:
+    driver: bridge
