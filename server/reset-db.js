@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function resetDB() {
   console.log('🧹 Vaciando todas las tablas en PostgreSQL...');
   
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "pedido_items", "pedidos", "inventario", "ordenes_taller", "gastos", "cortes", "compras", "clientes", "products", "categorias", "users" RESTART IDENTITY CASCADE;`);
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "compra_items", "compras", "gastos", "inventario", "ordenes_taller", "pedido_items", "pedidos", "product_variations", "products", "clientes", "categorias", "users" RESTART IDENTITY CASCADE;`);
 
   console.log('📦 Creando 1 categoría de ejemplo...');
   await prisma.categoria.create({
