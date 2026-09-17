@@ -3,23 +3,37 @@
     <div class="space-y-5 sm:space-y-6" v-if="pedido">
 
       <!-- Header -->
-      <div class="flex items-center gap-3">
-        <router-link
-          to="/pedidos"
-          class="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 transition-colors"
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <router-link
+            to="/pedidos"
+            class="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </router-link>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90 flex items-center gap-2 flex-wrap">
+            Venta <span class="text-brand-500 font-mono">#{{ pedido.orden }}</span>
+            
+            <span v-if="pedido.canal_venta === 'Tienda en Línea'" class="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+              Venta en Línea
+            </span>
+            <span v-else class="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
+              POS / Mostrador
+            </span>
+          </h1>
+        </div>
+
+        <button
+          @click="imprimirTicket"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-all shadow-sm active:scale-[0.98]"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </router-link>
-        <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90 flex items-center gap-2 flex-wrap">
-          Venta <span class="text-brand-500 font-mono">#{{ pedido.orden }}</span>
-          
-          <span v-if="pedido.canal_venta === 'Tienda en Línea'" class="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-            Venta en Línea
-          </span>
-          <span v-else class="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
-            POS / Mostrador
-          </span>
-        </h1>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Imprimir Ticket
+        </button>
       </div>
 
       <!-- Two-column layout -->
@@ -256,6 +270,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import AdminLayout from '@/components/layout/AdminLayout.vue';
 import { useAuth } from '@/composables/useAuth';
+import { printThermalTicket } from '@/utils/thermalTicketPdf';
 
 const { admin } = useAuth();
 
@@ -404,6 +419,27 @@ const estadoTextClase = (estado) => {
     'Rembolsado': 'text-purple-600 dark:text-purple-400',
   };
   return m[estado] ?? '';
+};
+
+const imprimirTicket = () => {
+  if (!pedido.value) return;
+  printThermalTicket({
+    orderNum: pedido.value.orden,
+    fecha: pedido.value.fecha,
+    cliente: pedido.value.cliente,
+    metodoPago: pedido.value.metodo_pago,
+    canal: pedido.value.canal_venta,
+    items: (pedido.value.items || []).map((it) => ({
+      nombre: it.nombre,
+      variante: it.variante,
+      cantidad: it.cantidad,
+      precio: parseFloat(it.precio) || 0,
+      subtotal: (parseFloat(it.precio) || 0) * it.cantidad,
+    })),
+    subtotal: subtotal.value,
+    total: pedido.value.total,
+    nota: pedido.value.nota,
+  });
 };
 </script>
 
