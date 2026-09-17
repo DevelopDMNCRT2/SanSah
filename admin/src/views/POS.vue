@@ -330,7 +330,18 @@
               </div>
             </div>
           </div>
-          <div class="px-6 pb-6">
+          <div class="px-6 pb-6 space-y-2.5">
+            <button
+              @click="imprimirTicketVenta"
+              class="w-full py-3 rounded-xl border-2 border-brand-500 text-brand-600 dark:text-brand-400 font-bold text-sm hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Imprimir Ticket
+            </button>
             <button @click="closeConfirmationModal" class="w-full py-3 rounded-xl bg-[#2D5A5A] text-white font-bold text-sm hover:bg-[#244a4a] transition-all shadow-md active:scale-[0.98]">Nueva Venta</button>
           </div>
         </div>
@@ -365,6 +376,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SANSAH_LOGO_B64, SANSAH_COLORS } from '@/utils/pdfBrand';
+import { printThermalTicket, type TicketItem } from '@/utils/thermalTicketPdf';
 import { useAuth } from '@/composables/useAuth';
 
 const { token } = useAuth();
@@ -389,7 +401,23 @@ const showClearModal = ref(false);
 const paymentData = ref({ method: '', nombre: '', telefono: '' });
 const prefilledClientInfo = ref({ nombre: '', telefono: '' });
 const isProcessingPayment = ref(false);
-const confirmedOrder = ref({ orderNum: 0, methodLabel: '', total: 0 });
+const confirmedOrder = ref<{
+  orderNum: number | string;
+  methodLabel: string;
+  total: number;
+  subtotal: number;
+  cliente: string;
+  fecha: string;
+  items: TicketItem[];
+}>({
+  orderNum: 0,
+  methodLabel: '',
+  total: 0,
+  subtotal: 0,
+  cliente: '',
+  fecha: '',
+  items: []
+});
 const paymentMethods = [
   { value: 'efectivo', label: 'Efectivo', svg: `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"/></svg>` },
   { value: 'tarjeta', label: 'Tarjeta', svg: `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-5.625-12h17.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125H3.375a1.125 1.125 0 0 1-1.125-1.125V4.875c0-.621.504-1.125 1.125-1.125Z"/></svg>` },
@@ -652,10 +680,26 @@ const processPayment = async () => {
     
     const savedOrder = await res.json();
 
+    const clientName = paymentData.value.nombre?.trim() || 'Público General';
     confirmedOrder.value = {
       orderNum: savedOrder.orden,
-      methodLabel: method?.label || '',
-      total: finalTotal
+      methodLabel: method?.label || 'Efectivo',
+      total: finalTotal,
+      subtotal: subtotal.value,
+      cliente: clientName !== 'Mostrador' ? clientName : 'Público General',
+      fecha: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }),
+      items: cart.value.map((item) => {
+        const unitario = item.variacionSeleccionada
+          ? parseFloat(item.variacionSeleccionada.precio) || 0
+          : parseFloat(item.producto.precio) || 0;
+        return {
+          nombre: item.producto.nombre,
+          variante: item.variacionSeleccionada ? item.variacionSeleccionada.valor : undefined,
+          cantidad: item.cantidad,
+          precio: unitario,
+          subtotal: unitario * item.cantidad,
+        };
+      }),
     };
     showPaymentModal.value = false;
     showConfirmationModal.value = true;
@@ -755,10 +799,25 @@ const generateQuote = () => {
   doc.save(`cotizacion_sansah_${currentOrderNum.value}.pdf`);
 };
 
+const imprimirTicketVenta = () => {
+  if (!confirmedOrder.value || confirmedOrder.value.items.length === 0) return;
+  printThermalTicket({
+    orderNum: confirmedOrder.value.orderNum,
+    fecha: confirmedOrder.value.fecha,
+    cliente: confirmedOrder.value.cliente,
+    metodoPago: confirmedOrder.value.methodLabel,
+    canal: 'POS / Mostrador',
+    items: confirmedOrder.value.items,
+    subtotal: confirmedOrder.value.subtotal,
+    total: confirmedOrder.value.total,
+  });
+};
+
 const closeConfirmationModal = () => {
   showConfirmationModal.value = false;
   cart.value = [];
   currentOrderNum.value = Math.floor(Math.random() * 9000) + 1000;
+  paymentData.value = { method: '', nombre: '', telefono: '' };
   prefilledClientInfo.value = { nombre: '', telefono: '' };
 };
 </script>
