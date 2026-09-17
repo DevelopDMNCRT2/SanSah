@@ -5,3 +5,5 @@ dist/
 admin/node_modules
 server/node_modules
 .vercel
+.agent/
+.agents/
