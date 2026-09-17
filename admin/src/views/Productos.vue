@@ -5,11 +5,26 @@
       <!-- Page Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90">Productos</h1>
-        <router-link to="/productos/nuevo"
-          class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuevo Producto
-        </router-link>
+        <div class="flex items-center gap-2.5">
+          <button
+            @click="abrirModalEtiquetas(null)"
+            class="flex items-center gap-2 rounded-lg bg-[#2D5A5A] px-3.5 py-2 text-sm font-medium text-white shadow-theme-xs hover:bg-[#244a4a] transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 5v14"></path>
+              <path d="M8 5v14"></path>
+              <path d="M12 5v14"></path>
+              <path d="M17 5v14"></path>
+              <path d="M21 5v14"></path>
+            </svg>
+            Imprimir Etiquetas
+          </button>
+          <router-link to="/productos/nuevo"
+            class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo Producto
+          </router-link>
+        </div>
       </div>
 
       <!-- Card -->
@@ -131,6 +146,10 @@
                       class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-blue-light-50 hover:text-blue-light-500 dark:text-gray-400 dark:hover:bg-blue-light-500/10 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </router-link>
+                    <button @click="abrirModalEtiquetas(p)" title="Imprimir Etiquetas"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-brand-50 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-brand-500/10 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+                    </button>
                     <button @click="eliminar(p)" title="Eliminar"
                       class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -304,6 +323,14 @@
       </Transition>
     </Teleport>
 
+    <!-- Modal Impresión de Etiquetas -->
+    <EtiquetasModal
+      :show="showEtiquetasModal"
+      :productos="productos"
+      :initial-producto="productoParaEtiquetas"
+      @close="showEtiquetasModal = false"
+    />
+
   </AdminLayout>
 </template>
 
@@ -312,6 +339,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout.vue';
+import EtiquetasModal from '@/components/inventario/EtiquetasModal.vue';
 
 const router = useRouter();
 const filtroActivo = ref('todos');
@@ -320,6 +348,13 @@ const busqueda     = ref('');
 const loading      = ref(true);
 const productos    = ref([]);
 const tiendasList  = ref([]);
+const showEtiquetasModal = ref(false);
+const productoParaEtiquetas = ref(null);
+
+const abrirModalEtiquetas = (p = null) => {
+  productoParaEtiquetas.value = p;
+  showEtiquetasModal.value = true;
+};
 
 const tabs = [
   { key: 'todos',     label: 'Todos'      },

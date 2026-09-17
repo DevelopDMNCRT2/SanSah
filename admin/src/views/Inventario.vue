@@ -16,6 +16,16 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9l2 2m0 0l2-2m-2 2v-5"/></svg>
             PDF
           </button>
+          <button @click="abrirModalEtiquetas(null)" class="flex items-center justify-center gap-1.5 rounded-lg bg-[#2D5A5A] px-3 py-2 h-9 text-sm font-medium text-white shadow-theme-xs hover:bg-[#244a4a] transition-colors" title="Imprimir Etiquetas">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 5v14"></path>
+              <path d="M8 5v14"></path>
+              <path d="M12 5v14"></path>
+              <path d="M17 5v14"></path>
+              <path d="M21 5v14"></path>
+            </svg>
+            Etiquetas
+          </button>
           
           <div v-if="!loading" class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] px-4 py-2 flex items-center gap-3">
             <div class="h-8 w-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
@@ -51,6 +61,7 @@
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Tipo</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Stock</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Acciones</p></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -100,10 +111,26 @@
                     {{ p.es_publico ? 'Publicado' : 'Borrador' }}
                   </span>
                 </td>
+                <!-- Acciones -->
+                <td class="px-5 py-4 sm:px-6">
+                  <button
+                    @click="abrirModalEtiquetas(p)"
+                    title="Imprimir etiquetas"
+                    class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-brand-50 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-brand-500/10 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 5v14"></path>
+                      <path d="M8 5v14"></path>
+                      <path d="M12 5v14"></path>
+                      <path d="M17 5v14"></path>
+                      <path d="M21 5v14"></path>
+                    </svg>
+                  </button>
+                </td>
               </tr>
 
               <tr v-if="productosFiltrados.length === 0 && !loading">
-                <td colspan="6" class="px-5 py-16 text-center">
+                <td colspan="7" class="px-5 py-16 text-center">
                   <svg class="mx-auto mb-3 text-gray-300 dark:text-gray-600" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                   <p class="text-sm text-gray-400 dark:text-gray-500">No hay productos aún.</p>
                 </td>
@@ -266,6 +293,14 @@
       </Transition>
     </Teleport>
 
+    <!-- Modal Impresión de Etiquetas -->
+    <EtiquetasModal
+      :show="showEtiquetasModal"
+      :productos="productos"
+      :initial-producto="productoParaEtiquetas"
+      @close="showEtiquetasModal = false"
+    />
+
   </AdminLayout>
 </template>
 
@@ -273,6 +308,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout.vue';
+import EtiquetasModal from '@/components/inventario/EtiquetasModal.vue';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SANSAH_LOGO_B64, SANSAH_COLORS } from '@/utils/pdfBrand';
@@ -280,6 +316,13 @@ import { SANSAH_LOGO_B64, SANSAH_COLORS } from '@/utils/pdfBrand';
 const busqueda  = ref('');
 const loading   = ref(true);
 const productos = ref([]);
+const showEtiquetasModal = ref(false);
+const productoParaEtiquetas = ref(null);
+
+const abrirModalEtiquetas = (p = null) => {
+  productoParaEtiquetas.value = p;
+  showEtiquetasModal.value = true;
+};
 
 const fetchProductos = async () => {
   loading.value = true;
