@@ -86,6 +86,17 @@
           <div class="flex justify-between items-center gap-3">
             <h1 class="text-2xl font-black text-gray-800 dark:text-white tracking-tight">Catálogo POS</h1>
             <div class="flex items-center gap-2">
+              <!-- Barcode Scanner Button (F2) -->
+              <button
+                @click="openScannerModal"
+                class="h-9 px-3 rounded-lg border border-brand-200 dark:border-brand-700/50 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/20 dark:hover:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                title="Escanear Código de Barras (Atajo: F2)"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4v4m0 8v4m18-16v4m0 8v4M7 8v8m3-8v8m3-8v8m4-8v8M4 12h16" />
+                </svg>
+                <span class="hidden sm:inline">Escanear (F2)</span>
+              </button>
               <!-- Search -->
               <div class="relative">
                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -366,11 +377,152 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- ═══ MODAL: Lector / Escáner de Código de Barras ═══ -->
+    <Teleport to="body">
+      <div v-if="showScannerModal" class="fixed inset-0 z-[1000000] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="closeScannerModal"></div>
+        <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700 animate-modal-in flex flex-col max-h-[90vh]">
+          <!-- Modal Header -->
+          <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
+            <div class="flex items-center gap-2.5">
+              <div class="h-10 w-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4v4m0 8v4m18-16v4m0 8v4M7 8v8m3-8v8m3-8v8m4-8v8M4 12h16" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-gray-800 dark:text-white">Lector de Código de Barras</h3>
+                <p class="text-xs text-gray-400">Escanea con la pistola lectora o escribe el código (F2)</p>
+              </div>
+            </div>
+            <button @click="closeScannerModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+            <!-- Input Scanner -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">
+                Código Escaneado o Manual (Presiona Enter)
+              </label>
+              <div class="relative">
+                <input
+                  ref="barcodeInputRef"
+                  v-model="barcodeInputValue"
+                  @keydown.enter="handleManualBarcodeSubmit"
+                  type="text"
+                  placeholder="Ej. 7501234567890..."
+                  class="w-full h-11 pl-4 pr-16 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-mono shadow-sm"
+                />
+                <button
+                  @click="handleManualBarcodeSubmit"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-lg bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition-all flex items-center justify-center"
+                >
+                  Enter
+                </button>
+              </div>
+            </div>
+
+            <!-- Success Feedback -->
+            <div v-if="scannedProductSuccess" class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-emerald-800 dark:text-emerald-300">¡Producto Agregado a la Venta!</p>
+                <p class="text-xs text-emerald-700 dark:text-emerald-400 truncate">{{ scannedProductSuccess.nombre }}</p>
+                <p class="text-xs font-extrabold text-emerald-900 dark:text-emerald-200">{{ formatCurrency(scannedProductSuccess.precio) }}</p>
+              </div>
+            </div>
+
+            <!-- Not Found State -->
+            <div v-if="barcodeNotFoundCode" class="space-y-4 p-4 rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20">
+              <div class="flex items-start gap-2.5">
+                <svg class="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div class="flex-1">
+                  <h4 class="text-xs font-bold text-amber-900 dark:text-amber-300">Código no registrado en catálogo</h4>
+                  <p class="text-xs text-amber-700 dark:text-amber-400 font-mono mt-0.5">Código detectado: "{{ barcodeNotFoundCode }}"</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Puedes vincularlo al instante a un producto existente o crear uno nuevo:</p>
+                </div>
+              </div>
+
+              <!-- Options -->
+              <div class="flex flex-col gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/40">
+                <button
+                  @click="showLinkingSearch = !showLinkingSearch"
+                  class="w-full py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-all"
+                >
+                  <span>🔗 Vincular a producto existente</span>
+                  <span>{{ showLinkingSearch ? '▲' : '▼' }}</span>
+                </button>
+
+                <!-- Search dropdown to link -->
+                <div v-if="showLinkingSearch" class="space-y-2 pt-1">
+                  <input
+                    v-model="linkSearchQuery"
+                    type="text"
+                    placeholder="Buscar producto existente..."
+                    class="w-full h-9 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                  <div class="max-h-40 overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-800">
+                    <div
+                      v-for="p in linkFilteredProducts"
+                      :key="p.id"
+                      @click="linkBarcodeToProduct(p)"
+                      class="p-2 text-xs flex items-center justify-between hover:bg-brand-50 dark:hover:bg-brand-900/20 cursor-pointer transition-colors"
+                    >
+                      <span class="font-medium text-gray-800 dark:text-white truncate mr-2">{{ p.nombre }}</span>
+                      <span class="font-bold text-brand-600 shrink-0">{{ formatCurrency(p.precio) }}</span>
+                    </div>
+                    <div v-if="linkFilteredProducts.length === 0" class="p-3 text-center text-xs text-gray-400">
+                      No hay productos coincidentes
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Create new product -->
+                <button
+                  @click="goToCreateProductWithBarcode"
+                  class="w-full py-2 px-3 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-xs font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  <span>Crear nuevo producto con este código</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex justify-end">
+            <button
+              @click="closeScannerModal"
+              class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+            >
+              Cerrar (Esc)
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Toast Notification -->
+    <transition name="fade">
+      <div v-if="toastMessage" class="fixed bottom-6 right-6 z-[9999999] px-4 py-3 rounded-xl bg-gray-900/95 text-white dark:bg-white dark:text-gray-900 shadow-2xl flex items-center gap-2.5 border border-gray-700 text-xs font-semibold">
+        <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <span>{{ toastMessage }}</span>
+      </div>
+    </transition>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout.vue';
 import jsPDF from 'jspdf';
@@ -379,6 +531,7 @@ import { SANSAH_LOGO_B64, SANSAH_COLORS } from '@/utils/pdfBrand';
 import { printThermalTicket, type TicketItem } from '@/utils/thermalTicketPdf';
 import { useAuth } from '@/composables/useAuth';
 
+const router = useRouter();
 const { token } = useAuth();
 
 const productos = ref<any[]>([]);
@@ -388,6 +541,198 @@ const showPrices = ref(true);
 const busquedaPOS = ref('');
 const activeCategoria = ref('Todos');
 const currentOrderNum = ref(Math.floor(Math.random() * 9000) + 1000);
+
+// ── Barcode Scanner State ──
+const showScannerModal = ref(false);
+const barcodeInputValue = ref('');
+const barcodeInputRef = ref<HTMLInputElement | null>(null);
+const scannedProductSuccess = ref<any>(null);
+const barcodeNotFoundCode = ref('');
+const showLinkingSearch = ref(false);
+const linkSearchQuery = ref('');
+const toastMessage = ref('');
+let toastTimeout: any = null;
+
+const linkFilteredProducts = computed(() => {
+  if (!linkSearchQuery.value.trim()) return productos.value.slice(0, 8);
+  const q = linkSearchQuery.value.toLowerCase().trim();
+  return productos.value.filter((p: any) =>
+    p.nombre?.toLowerCase().includes(q) ||
+    (p.marca && p.marca.toLowerCase().includes(q))
+  ).slice(0, 10);
+});
+
+const showToast = (msg: string) => {
+  toastMessage.value = msg;
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toastMessage.value = '';
+  }, 2800);
+};
+
+// Subtle Web Audio API feedback beep
+const playBeep = (success = true) => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioCtx = new AudioContextClass();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    if (success) {
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    } else {
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+  } catch {
+    // Silent fail if AudioContext is blocked by browser policy
+  }
+};
+
+const openScannerModal = () => {
+  showScannerModal.value = true;
+  barcodeNotFoundCode.value = '';
+  scannedProductSuccess.value = null;
+  showLinkingSearch.value = false;
+  linkSearchQuery.value = '';
+  nextTick(() => {
+    barcodeInputRef.value?.focus();
+  });
+};
+
+const closeScannerModal = () => {
+  showScannerModal.value = false;
+  barcodeNotFoundCode.value = '';
+  scannedProductSuccess.value = null;
+  showLinkingSearch.value = false;
+  linkSearchQuery.value = '';
+};
+
+const processScannedCode = (rawCode: string) => {
+  if (!rawCode) return;
+  const cleanCode = rawCode.trim().toLowerCase();
+
+  // Search product by barcode, id, or serial number
+  const found = productos.value.find((p: any) =>
+    (p.codigo_barras && p.codigo_barras.trim().toLowerCase() === cleanCode) ||
+    p.id?.toString() === cleanCode ||
+    (p.numero_serie && p.numero_serie.trim().toLowerCase() === cleanCode)
+  );
+
+  if (found) {
+    playBeep(true);
+    handleProductClick(found);
+    showToast(`✓ Agregado: ${found.nombre}`);
+    scannedProductSuccess.value = found;
+    barcodeNotFoundCode.value = '';
+    barcodeInputValue.value = '';
+    nextTick(() => {
+      barcodeInputRef.value?.focus();
+    });
+  } else {
+    playBeep(false);
+    barcodeNotFoundCode.value = rawCode.trim();
+    scannedProductSuccess.value = null;
+    showScannerModal.value = true;
+    showLinkingSearch.value = false;
+    linkSearchQuery.value = '';
+    nextTick(() => {
+      barcodeInputRef.value?.focus();
+    });
+  }
+};
+
+const handleManualBarcodeSubmit = () => {
+  if (!barcodeInputValue.value.trim()) return;
+  const code = barcodeInputValue.value.trim();
+  barcodeInputValue.value = '';
+  processScannedCode(code);
+};
+
+const linkBarcodeToProduct = async (product: any) => {
+  if (!barcodeNotFoundCode.value || !product) return;
+  const codeToLink = barcodeNotFoundCode.value.trim();
+  try {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    await axios.patch(`${API_URL}/api/products/${product.id}/barcode`, {
+      codigo_barras: codeToLink
+    });
+    // Update local memory
+    product.codigo_barras = codeToLink;
+    playBeep(true);
+    handleProductClick(product);
+    showToast(`✓ Código vinculado y agregado: ${product.nombre}`);
+    scannedProductSuccess.value = product;
+    barcodeNotFoundCode.value = '';
+    showLinkingSearch.value = false;
+  } catch (err: any) {
+    alert(err.response?.data?.error || 'Error al vincular el código de barras');
+  }
+};
+
+const goToCreateProductWithBarcode = () => {
+  const code = barcodeNotFoundCode.value.trim();
+  closeScannerModal();
+  router.push(`/productos/nuevo?codigo_barras=${encodeURIComponent(code)}`);
+};
+
+// Global keystroke listener for physical barcode gun (< 65ms per keystroke) & F2
+let barcodeBuffer = '';
+let lastKeyTime = 0;
+
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'F2') {
+    e.preventDefault();
+    openScannerModal();
+    return;
+  }
+
+  if (e.key === 'Escape' && showScannerModal.value) {
+    closeScannerModal();
+    return;
+  }
+
+  const activeEl = document.activeElement;
+  const isScannerInput = activeEl === barcodeInputRef.value;
+  const isOtherInput = activeEl && !isScannerInput &&
+    (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+
+  const now = Date.now();
+  const diff = now - lastKeyTime;
+  lastKeyTime = now;
+
+  if (e.key === 'Enter') {
+    if (barcodeBuffer.length >= 2 && (diff < 65 || !isOtherInput)) {
+      e.preventDefault();
+      const code = barcodeBuffer.trim();
+      barcodeBuffer = '';
+      processScannedCode(code);
+      return;
+    }
+    barcodeBuffer = '';
+    return;
+  }
+
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (isOtherInput && diff > 75) {
+      barcodeBuffer = '';
+    } else if (diff > 80) {
+      barcodeBuffer = e.key;
+    } else {
+      barcodeBuffer += e.key;
+    }
+  }
+};
 
 // ── Variable Modal State ──
 const showVariableModal = ref(false);
@@ -499,6 +844,13 @@ onMounted(() => {
       console.error("Error parsing pending service", e);
     }
   }
+
+  window.addEventListener('keydown', handleGlobalKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown);
+  if (toastTimeout) clearTimeout(toastTimeout);
 });
 
 // ── Product Click Handler ──

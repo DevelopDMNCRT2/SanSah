@@ -525,6 +525,8 @@ onMounted(async () => {
       console.error('Error fetching product:', err);
       alert('Error al cargar el producto para editar');
     }
+  } else if (route.query.codigo_barras) {
+    form.codigo_barras = String(route.query.codigo_barras);
   }
 });
 

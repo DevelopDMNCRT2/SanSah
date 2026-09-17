@@ -258,4 +258,46 @@ router.post('/:id/entrada-stock', async (req, res) => {
   }
 });
 
+// PATCH /api/products/:id/barcode — Asignar código de barras a un producto existente
+router.patch('/:id/barcode', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { codigo_barras } = req.body;
+
+    if (!codigo_barras || !codigo_barras.trim()) {
+      return res.status(400).json({ error: 'El código de barras es requerido' });
+    }
+
+    const cleanCode = codigo_barras.trim();
+
+    // Validar que el código no pertenezca a otro producto
+    const existing = await prisma.product.findFirst({
+      where: {
+        codigo_barras: cleanCode,
+        NOT: { id }
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        error: `El código "${cleanCode}" ya está asignado a "${existing.nombre}"`
+      });
+    }
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { codigo_barras: cleanCode },
+      include: { variaciones: true }
+    });
+
+    res.json({
+      message: 'Código de barras asignado con éxito',
+      product: updated
+    });
+  } catch (error) {
+    console.error('Error PATCH /products/:id/barcode:', error);
+    res.status(500).json({ error: 'Error al asignar código de barras' });
+  }
+});
+
 module.exports = router;
