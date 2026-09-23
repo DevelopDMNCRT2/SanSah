@@ -23,7 +23,7 @@
               </div>
               <div>
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">Impresión de Etiquetas con Código de Barras</h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Selecciona los productos y la cantidad de etiquetas a generar</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Rollo térmico estándar 50×25 mm</p>
               </div>
             </div>
             <button
@@ -37,40 +37,17 @@
             </button>
           </div>
 
-          <!-- Controls Section: Formato + Buscador -->
-          <div class="px-6 py-3 bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <!-- Formato de Impresión -->
+          <!-- Controls Section: Indicador de Medida + Buscador -->
+          <div class="px-6 py-3 bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 shrink-0">
+            <!-- Indicador de Formato Rollo Térmico -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Formato:</span>
-              <div class="inline-flex rounded-lg p-0.5 bg-gray-200/70 dark:bg-gray-700/60 text-xs font-medium">
-                <button
-                  type="button"
-                  @click="formato = 'rollo'"
-                  :class="formato === 'rollo' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                  </svg>
-                  Rollo Térmico (58x40mm)
-                </button>
-                <button
-                  type="button"
-                  @click="formato = 'hoja'"
-                  :class="formato === 'hoja' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <path d="M3 9h18"></path>
-                    <path d="M3 15h18"></path>
-                    <path d="M9 3v18"></path>
-                    <path d="M15 3v18"></path>
-                  </svg>
-                  Hoja Carta (3x10)
-                </button>
-              </div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold text-brand-700 dark:text-brand-400 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 6v6l4 2"></path>
+                </svg>
+                Rollo Térmico 50×25 mm
+              </span>
             </div>
 
             <!-- Buscador -->
@@ -167,7 +144,7 @@
                 Total: <strong class="text-sm font-black text-brand-600 dark:text-brand-400">{{ totalEtiquetas }}</strong> etiquetas
                 <span class="opacity-75">({{ itemsSeleccionados.length }} productos seleccionados)</span>
               </p>
-              <p class="text-[11px] text-gray-400 mt-0.5">Formato: {{ formato === 'rollo' ? 'Rollo térmico individual (58x40mm)' : 'Hojas Carta / A4 (30 por página)' }}</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">Compatible con rollos térmicos de 50×25 mm o superiores</p>
             </div>
 
             <div class="flex items-center gap-3">
@@ -202,7 +179,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { printBarcodeLabels, type LabelItem, type LabelFormat } from '@/utils/barcodeLabelsPdf';
+import { printBarcodeLabels, type LabelItem } from '@/utils/barcodeLabelsPdf';
 
 interface SelectableItem extends LabelItem {
   key: string;
@@ -219,7 +196,6 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-const formato = ref<LabelFormat>('rollo');
 const busqueda = ref('');
 const generando = ref(false);
 const items = ref<SelectableItem[]>([]);
@@ -327,7 +303,7 @@ const generarEImprimir = () => {
       cantidad: Math.max(1, it.cantidad || 1),
     }));
 
-    printBarcodeLabels(payload, formato.value);
+    printBarcodeLabels(payload);
   } catch (err) {
     console.error('Error al imprimir etiquetas:', err);
     alert('Ocurrió un error al generar las etiquetas.');
