@@ -23,7 +23,7 @@
               </div>
               <div>
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">Impresión de Etiquetas con Código de Barras</h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Selecciona los productos y la cantidad de etiquetas a generar</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Soporte multiformato para rollo térmico y hoja carta</p>
               </div>
             </div>
             <button
@@ -37,38 +37,43 @@
             </button>
           </div>
 
-          <!-- Controls Section: Formato + Buscador -->
+          <!-- Controls Section: Selector Multiformato + Buscador -->
           <div class="px-6 py-3 bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <!-- Formato de Impresión -->
+            <!-- Selector de Formato -->
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Formato:</span>
               <div class="inline-flex rounded-lg p-0.5 bg-gray-200/70 dark:bg-gray-700/60 text-xs font-medium">
                 <button
                   type="button"
-                  @click="formato = 'rollo'"
-                  :class="formato === 'rollo' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5"
+                  @click="cambiarFormato('50x25')"
+                  :class="formato === '50x25' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                  class="px-2.5 py-1 rounded-md transition-all"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                  </svg>
-                  Rollo Térmico (58x40mm)
+                  50×25 mm
                 </button>
                 <button
                   type="button"
-                  @click="formato = 'hoja'"
-                  :class="formato === 'hoja' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400'"
-                  class="px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5"
+                  @click="cambiarFormato('50x30')"
+                  :class="formato === '50x30' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                  class="px-2.5 py-1 rounded-md transition-all"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <path d="M3 9h18"></path>
-                    <path d="M3 15h18"></path>
-                    <path d="M9 3v18"></path>
-                    <path d="M15 3v18"></path>
-                  </svg>
-                  Hoja Carta (3x10)
+                  50×30 mm
+                </button>
+                <button
+                  type="button"
+                  @click="cambiarFormato('58x40')"
+                  :class="formato === '58x40' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                  class="px-2.5 py-1 rounded-md transition-all"
+                >
+                  58×40 mm
+                </button>
+                <button
+                  type="button"
+                  @click="cambiarFormato('hoja')"
+                  :class="formato === 'hoja' ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm font-bold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+                  class="px-2.5 py-1 rounded-md transition-all"
+                >
+                  Hoja Carta
                 </button>
               </div>
             </div>
@@ -109,45 +114,54 @@
             <div
               v-for="item in itemsFiltrados"
               :key="item.key"
-              :class="item.selected ? 'border-brand-300 dark:border-brand-500/40 bg-brand-50/20 dark:bg-brand-500/5' : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
-              class="flex items-center justify-between p-3 rounded-xl border transition-all gap-3"
+              class="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-brand-200 dark:hover:border-brand-800 hover:bg-brand-50/20 dark:hover:bg-brand-900/10 transition-colors"
+              :class="item.selected ? 'bg-brand-50/40 dark:bg-brand-900/20 border-brand-300 dark:border-brand-700' : ''"
             >
-              <!-- Checkbox + Info -->
-              <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" @click="item.selected = !item.selected">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
                 <input
                   type="checkbox"
                   v-model="item.selected"
-                  @click.stop
-                  class="rounded border-gray-300 text-brand-500 focus:ring-brand-400 shrink-0"
+                  class="rounded border-gray-300 text-brand-500 focus:ring-brand-400"
                 />
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">{{ item.nombre }}</p>
-                  <div class="flex items-center gap-2 text-xs text-gray-400 mt-0.5 flex-wrap">
-                    <span v-if="item.variante" class="font-medium text-brand-600 dark:text-brand-400">Var: {{ item.variante }}</span>
-                    <span class="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[11px] text-gray-600 dark:text-gray-300">
+                <div class="min-w-0 flex-1 pr-2">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-xs text-gray-900 dark:text-white truncate">
+                      {{ item.nombre }}
+                    </span>
+                    <span
+                      v-if="item.variante"
+                      class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                    >
+                      {{ item.variante }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3 mt-1 text-[11px] text-gray-500">
+                    <span class="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
                       {{ item.codigoBarras }}
                     </span>
-                    <span class="font-bold text-gray-700 dark:text-gray-200">${{ Number(item.precio).toFixed(2) }} MXN</span>
+                    <span class="font-bold text-brand-600 dark:text-brand-400">
+                      {{ formatCurrency(item.precio) }}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <!-- Control de Cantidad -->
-              <div class="flex items-center gap-1.5 shrink-0" :class="{ 'opacity-40 pointer-events-none': !item.selected }">
-                <span class="text-xs text-gray-400 font-medium">Copias:</span>
+              <!-- Selector de Cantidad de Etiquetas -->
+              <div class="flex items-center gap-1.5 shrink-0" v-if="item.selected">
+                <span class="text-[11px] text-gray-500 mr-1 hidden sm:inline">Copias:</span>
                 <button
                   type="button"
-                  @click.stop="item.cantidad = Math.max(1, item.cantidad - 1)"
+                  @click.stop="item.cantidad = Math.max(1, (item.cantidad || 1) - 1)"
                   class="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-bold"
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  v-model.number="item.cantidad"
                   min="1"
-                  max="500"
-                  class="w-12 h-7 text-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold text-gray-800 dark:text-white"
+                  max="999"
+                  v-model.number="item.cantidad"
+                  class="w-12 text-center text-xs py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-brand-500 font-bold"
                 />
                 <button
                   type="button"
@@ -167,7 +181,7 @@
                 Total: <strong class="text-sm font-black text-brand-600 dark:text-brand-400">{{ totalEtiquetas }}</strong> etiquetas
                 <span class="opacity-75">({{ itemsSeleccionados.length }} productos seleccionados)</span>
               </p>
-              <p class="text-[11px] text-gray-400 mt-0.5">Formato: {{ formato === 'rollo' ? 'Rollo térmico individual (58x40mm)' : 'Hojas Carta / A4 (30 por página)' }}</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">{{ formatoLabelInfo }}</p>
             </div>
 
             <div class="flex items-center gap-3">
@@ -219,7 +233,36 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-const formato = ref<LabelFormat>('rollo');
+const STORAGE_KEY = 'sansah_label_format';
+const savedFormat = (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null) as LabelFormat | null;
+const formato = ref<LabelFormat>(
+  savedFormat && ['50x25', '50x30', '58x40', 'hoja'].includes(savedFormat) ? savedFormat : '50x25'
+);
+
+const cambiarFormato = (nuevoFormato: LabelFormat) => {
+  formato.value = nuevoFormato;
+  try {
+    localStorage.setItem(STORAGE_KEY, nuevoFormato);
+  } catch (e) {
+    console.warn('No se pudo guardar el formato en localStorage:', e);
+  }
+};
+
+const formatoLabelInfo = computed(() => {
+  switch (formato.value) {
+    case '50x25':
+      return 'Rollo térmico 50×25 mm (tamaño estándar universal)';
+    case '50x30':
+      return 'Rollo térmico 50×30 mm (rollo mediano)';
+    case '58x40':
+      return 'Rollo térmico 58×40 mm (rollo ancho para impresoras de 58 mm)';
+    case 'hoja':
+      return 'Hoja Carta autoadherible (cuadrícula 3×10 = 30 etiquetas por página)';
+    default:
+      return '';
+  }
+});
+
 const busqueda = ref('');
 const generando = ref(false);
 const items = ref<SelectableItem[]>([]);
@@ -242,33 +285,30 @@ const buildItemsList = () => {
           precio: parseFloat(v.precio) || parseFloat(p.precio) || 0,
           codigoBarras: varBarcode,
           cantidad: 1,
-          selected: !!isMatch,
+          selected: isMatch ? true : false,
         });
       });
     } else {
-      const pBarcode = p.codigo_barras || p.sku || String(p.id).padStart(8, '0');
+      // Producto simple
+      const barcode = p.codigo_barras || p.sku || `PRD-${p.id}`;
       const isMatch = props.initialProducto && props.initialProducto.id === p.id;
       list.push({
         key: `prod_${p.id}`,
         id: p.id,
         nombre: p.nombre,
-        variante: '',
+        variante: undefined,
         precio: parseFloat(p.precio) || 0,
-        codigoBarras: pBarcode,
+        codigoBarras: barcode,
         cantidad: 1,
-        selected: !!isMatch,
+        selected: isMatch ? true : false,
       });
     }
-  }
-
-  // Si no había initialProducto, por defecto seleccionar los primeros 5 o ninguno
-  if (!props.initialProducto && list.length > 0) {
-    list.slice(0, 5).forEach((it) => (it.selected = true));
   }
 
   items.value = list;
 };
 
+// Sincronizar items al abrir el modal o cambiar props
 watch(
   () => props.show,
   (val) => {
@@ -280,32 +320,47 @@ watch(
   { immediate: true }
 );
 
+// Filtrado reactivo por texto de búsqueda
 const itemsFiltrados = computed(() => {
-  if (!busqueda.value.trim()) return items.value;
+  if (!busqueda.value || !busqueda.value.trim()) {
+    return items.value;
+  }
   const q = busqueda.value.toLowerCase().trim();
-  return items.value.filter(
-    (it) =>
-      it.nombre.toLowerCase().includes(q) ||
-      (it.variante && it.variante.toLowerCase().includes(q)) ||
-      it.codigoBarras.toLowerCase().includes(q)
-  );
+  return items.value.filter((it) => {
+    const nombreMatch = it.nombre.toLowerCase().includes(q);
+    const codeMatch = it.codigoBarras.toLowerCase().includes(q);
+    const varMatch = it.variante ? it.variante.toLowerCase().includes(q) : false;
+    return nombreMatch || codeMatch || varMatch;
+  });
 });
 
+// Selección global
 const itemsSeleccionados = computed(() => {
   return items.value.filter((it) => it.selected);
 });
 
-const totalEtiquetas = computed(() => {
-  return itemsSeleccionados.value.reduce((sum, it) => sum + Math.max(1, Number(it.cantidad) || 1), 0);
-});
-
 const todosSeleccionados = computed(() => {
-  return itemsFiltrados.value.length > 0 && itemsFiltrados.value.every((it) => it.selected);
+  if (itemsFiltrados.value.length === 0) return false;
+  return itemsFiltrados.value.every((it) => it.selected);
 });
 
 const toggleTodos = () => {
-  const nuevoEstado = !todosSeleccionados.value;
-  itemsFiltrados.value.forEach((it) => (it.selected = nuevoEstado));
+  const targetState = !todosSeleccionados.value;
+  itemsFiltrados.value.forEach((it) => {
+    it.selected = targetState;
+  });
+};
+
+const totalEtiquetas = computed(() => {
+  return itemsSeleccionados.value.reduce((acc, it) => acc + (it.cantidad || 1), 0);
+});
+
+const formatCurrency = (val: number): string => {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+  }).format(val);
 };
 
 const cerrar = () => {
