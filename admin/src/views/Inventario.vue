@@ -95,7 +95,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-              <tr v-for="p in productosFiltrados" :key="p.id" class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+              <tr v-for="p in productosPaginados" :key="p.id" class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                 <!-- Img -->
                 <td class="px-4 py-3 sm:px-5">
                   <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -203,6 +203,44 @@
               </tr>
             </tfoot>
           </table>
+        </div>
+
+        <!-- Paginación a 20 entradas -->
+        <div v-if="!loading && productosFiltrados.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Mostrando {{ desde + 1 }}–{{ Math.min(desde + porPagina, productosFiltrados.length) }} de {{ productosFiltrados.length }} productos
+          </p>
+          <div v-if="totalPaginas > 1" class="flex items-center gap-1">
+            <button
+              @click="pagina--"
+              :disabled="pagina === 1"
+              class="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Página anterior"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <template v-for="(p, idx) in paginasVisibles" :key="idx">
+              <span v-if="p === '...'" class="px-2 text-gray-400 text-sm">...</span>
+              <button
+                v-else
+                @click="pagina = p"
+                :class="[
+                  'flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium transition-colors',
+                  p === pagina
+                    ? 'bg-brand-500 text-white'
+                    : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ]"
+              >{{ p }}</button>
+            </template>
+            <button
+              @click="pagina++"
+              :disabled="pagina === totalPaginas"
+              class="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Página siguiente"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -371,7 +409,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import AdminLayout from '@/components/layout/AdminLayout.vue';
 import EtiquetasModal from '@/components/inventario/EtiquetasModal.vue';
@@ -384,6 +422,14 @@ const loading   = ref(true);
 const productos = ref([]);
 const showEtiquetasModal = ref(false);
 const productoParaEtiquetas = ref(null);
+
+// Paginación a 20 entradas
+const pagina    = ref(1);
+const porPagina = 20;
+
+watch(busqueda, () => {
+  pagina.value = 1;
+});
 
 const abrirModalEtiquetas = (p = null) => {
   productoParaEtiquetas.value = p;
@@ -410,6 +456,33 @@ const productosFiltrados = computed(() => {
     lista = lista.filter(p => p.nombre.toLowerCase().includes(busqueda.value.toLowerCase()));
   }
   return lista;
+});
+
+const totalPaginas = computed(() => Math.max(1, Math.ceil(productosFiltrados.value.length / porPagina)));
+const desde = computed(() => (pagina.value - 1) * porPagina);
+const productosPaginados = computed(() => productosFiltrados.value.slice(desde.value, desde.value + porPagina));
+
+const paginasVisibles = computed(() => {
+  const total = totalPaginas.value;
+  const cur = pagina.value;
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages = new Set([1, total, cur]);
+  if (cur - 1 > 1) pages.add(cur - 1);
+  if (cur - 2 > 1) pages.add(cur - 2);
+  if (cur + 1 < total) pages.add(cur + 1);
+  if (cur + 2 < total) pages.add(cur + 2);
+
+  const sorted = Array.from(pages).sort((a, b) => a - b);
+  const result = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      result.push('...');
+    }
+    result.push(sorted[i]);
+  }
+  return result;
 });
 
 const getProductStock = (p) => {
