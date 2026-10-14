@@ -2,25 +2,81 @@
   <AdminLayout>
     <div class="space-y-5 sm:space-y-6">
 
-      <!-- Page Header & Store Selector -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90">Estadísticas</h1>
-        </div>
-        
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2">
-            <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Categoría:</label>
-            <select v-model="selectedTienda" @change="fetchData" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 pl-3 pr-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10">
-              <option value="todas">Todas las categorías</option>
-              <option v-for="t in tiendas" :key="t.id" :value="t.id">{{ t.nombre }}</option>
-            </select>
+      <!-- Page Header & Filter Bar -->
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90">Estadísticas y Ventas</h1>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Analítica de ingresos, gastos, movimientos y balance general</p>
           </div>
           
-          <button @click="downloadSalesPDF" class="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-theme-xs hover:bg-green-700 transition-colors" title="Descargar Reporte en PDF">
+          <button @click="downloadSalesPDF" class="flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-theme-xs hover:bg-green-700 transition-colors self-start sm:self-auto" title="Descargar Reporte en PDF">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Exportar PDF
           </button>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="bg-white dark:bg-white/[0.03] p-4 rounded-2xl border border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+          
+          <!-- Filtro de Período y Categoría -->
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Período:</label>
+              <select v-model="filtroPeriodo" @change="onPeriodoChange" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                <option value="mes">Mes específico</option>
+                <option value="dia">Día específico</option>
+                <option value="rango">Rango de fechas</option>
+                <option value="todo">Todo el histórico</option>
+              </select>
+            </div>
+
+            <!-- Mes específico -->
+            <div v-if="filtroPeriodo === 'mes'" class="flex items-center gap-2">
+              <select v-model="selectedMes" @change="fetchData" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                <option v-for="(m, idx) in mesesNombres" :key="idx" :value="idx">{{ m }}</option>
+              </select>
+              <select v-model="selectedAnio" @change="fetchData" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                <option v-for="y in aniosDisponibles" :key="y" :value="y">{{ y }}</option>
+              </select>
+            </div>
+
+            <!-- Día específico -->
+            <div v-else-if="filtroPeriodo === 'dia'" class="flex items-center gap-2">
+              <flat-pickr
+                v-model="selectedDia"
+                :config="diaConfig"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-36 text-center cursor-pointer"
+                placeholder="Seleccionar día"
+                @on-change="fetchData"
+              />
+            </div>
+
+            <!-- Rango de fechas -->
+            <div v-else-if="filtroPeriodo === 'rango'" class="flex items-center gap-2">
+              <flat-pickr
+                v-model="selectedRango"
+                :config="rangoConfig"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-64 text-center cursor-pointer"
+                placeholder="Fecha inicio a fin"
+                @on-change="onRangoChange"
+              />
+            </div>
+
+            <!-- Filtro de Categoría -->
+            <div class="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700 pt-2 sm:pt-0 sm:pl-3">
+              <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoría:</label>
+              <select v-model="selectedTienda" @change="fetchData" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 py-2 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                <option value="todas">Todas las categorías</option>
+                <option v-for="t in tiendas" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Resumen de período activo -->
+          <div class="text-xs font-medium text-gray-400">
+            Mostrando: <span class="font-semibold text-brand-600 dark:text-brand-400">{{ activePeriodoTexto }}</span>
+          </div>
         </div>
       </div>
 
@@ -191,12 +247,64 @@ import VueApexCharts from 'vue3-apexcharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SANSAH_LOGO_B64, SANSAH_COLORS } from '@/utils/pdfBrand';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import { Spanish } from 'flatpickr/dist/l10n/es.js';
 
 // --- Estado ---
 const loading = ref(true);
 const tiendas = ref([]);
 const selectedTienda = ref('todas');
 const reporteData = ref({});
+
+const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const aniosDisponibles = computed(() => {
+  const currentY = new Date().getFullYear();
+  return [currentY - 1, currentY, currentY + 1];
+});
+
+const now = new Date();
+const filtroPeriodo = ref('mes'); // 'mes' | 'dia' | 'rango' | 'todo'
+const selectedMes = ref(now.getMonth());
+const selectedAnio = ref(now.getFullYear());
+const selectedDia = ref(now.toISOString().split('T')[0]);
+const selectedRango = ref('');
+
+const diaConfig = {
+  locale: Spanish,
+  dateFormat: 'Y-m-d',
+  altInput: true,
+  altFormat: 'd/m/Y',
+};
+
+const rangoConfig = {
+  locale: Spanish,
+  mode: 'range',
+  dateFormat: 'Y-m-d',
+  altInput: true,
+  altFormat: 'd/m/Y',
+};
+
+const onPeriodoChange = () => {
+  fetchData();
+};
+
+const onRangoChange = (_selectedDates, dateStr) => {
+  if (dateStr && dateStr.includes(' to ')) {
+    fetchData();
+  }
+};
+
+const activePeriodoTexto = computed(() => {
+  if (filtroPeriodo.value === 'mes') {
+    return `${mesesNombres[selectedMes.value]} ${selectedAnio.value}`;
+  } else if (filtroPeriodo.value === 'dia') {
+    return selectedDia.value ? `Día ${selectedDia.value}` : 'Día seleccionado';
+  } else if (filtroPeriodo.value === 'rango') {
+    return selectedRango.value ? selectedRango.value.replace(' to ', ' al ') : 'Rango seleccionado';
+  }
+  return 'Todo el histórico';
+});
 
 // --- Fetch tiendas reales ---
 const fetchTiendas = async () => {
@@ -212,7 +320,25 @@ const fetchData = async () => {
   try {
     const params = new URLSearchParams();
     if (selectedTienda.value !== 'todas') params.append('tienda_id', selectedTienda.value);
-    
+
+    if (filtroPeriodo.value === 'mes') {
+      const y = selectedAnio.value;
+      const m = selectedMes.value;
+      const primerDia = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+      const ultimoDiaNum = new Date(y, m + 1, 0).getDate();
+      const ultimoDia = `${y}-${String(m + 1).padStart(2, '0')}-${String(ultimoDiaNum).padStart(2, '0')}`;
+      params.append('fecha_inicio', primerDia);
+      params.append('fecha_fin', ultimoDia);
+    } else if (filtroPeriodo.value === 'dia') {
+      if (selectedDia.value) params.append('fecha', selectedDia.value);
+    } else if (filtroPeriodo.value === 'rango') {
+      if (selectedRango.value && selectedRango.value.includes(' to ')) {
+        const [ini, fin] = selectedRango.value.split(' to ');
+        params.append('fecha_inicio', ini);
+        params.append('fecha_fin', fin);
+      }
+    }
+
     const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/reportes/ventas?${params}`);
     if (res.ok) {
       reporteData.value = await res.json();
@@ -387,19 +513,21 @@ const downloadSalesPDF = () => {
 
   // Título a la derecha
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
-  doc.text('Reporte General de Ventas', pageW - 14, 15, { align: 'right' });
-  doc.setFontSize(9);
+  doc.text('Reporte General de Ventas', pageW - 14, 12, { align: 'right' });
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-MX')}`, pageW - 14, 24, { align: 'right' });
+  doc.text(`Período: ${activePeriodoTexto.value}`, pageW - 14, 19, { align: 'right' });
+  doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-MX')}`, pageW - 14, 25, { align: 'right' });
 
   // ── Sub-header info ────────────────────────────────────────────
   doc.setTextColor(...SANSAH_COLORS.negro);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   const ingresoFmt = `$${(reporteData.value.ingreso_neto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`;
-  doc.text(`Ingreso Neto Total: ${ingresoFmt}`, 14, 44);
+  const egresoFmt = `$${(reporteData.value.egreso_total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`;
+  doc.text(`Ingreso Neto: ${ingresoFmt}    |    Egresos Totales: ${egresoFmt}`, 14, 44);
 
   // ── Línea separadora naranja ──────────────────────────────────
   doc.setDrawColor(...SANSAH_COLORS.naranja);
@@ -482,7 +610,7 @@ const downloadSalesPDF = () => {
     }
   });
 
-  doc.save(`reporte_ventas_sansah_${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`reporte_ventas_${filtroPeriodo.value}_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
 onMounted(async () => {

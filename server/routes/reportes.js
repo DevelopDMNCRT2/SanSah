@@ -6,7 +6,21 @@ const prisma = new PrismaClient();
 // GET /api/reportes/ventas
 router.get('/ventas', async (req, res) => {
   try {
-    const { tienda_id } = req.query; // Puede ser 'todas', id numérico o nombre de categoría
+    const { tienda_id, fecha_inicio, fecha_fin, fecha } = req.query; // Puede ser 'todas', id numérico o nombre de categoría
+
+    let dateRange = null;
+    if (fecha) {
+      const [y, m, d] = fecha.split('-').map(Number);
+      dateRange = {
+        start: new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0)),
+        end: new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999))
+      };
+    } else if (fecha_inicio || fecha_fin) {
+      dateRange = {
+        start: fecha_inicio ? new Date(`${fecha_inicio}T00:00:00.000Z`) : new Date('2020-01-01T00:00:00.000Z'),
+        end: fecha_fin ? new Date(`${fecha_fin}T23:59:59.999Z`) : new Date()
+      };
+    }
 
     let categoriaFiltro = null;
     if (tienda_id && tienda_id !== 'todas') {
@@ -30,8 +44,16 @@ router.get('/ventas', async (req, res) => {
     });
 
     // Obtener pedidos completados para calcular ingresos
+    const wherePedidos = { estado: 'Completado' };
+    if (dateRange) {
+      wherePedidos.created_at = {
+        gte: dateRange.start,
+        lte: dateRange.end
+      };
+    }
+
     const pedidos = await prisma.pedido.findMany({
-      where: { estado: 'Completado' },
+      where: wherePedidos,
       include: { items: true },
       orderBy: { created_at: 'asc' }
     });
@@ -189,21 +211,49 @@ router.get('/ventas', async (req, res) => {
           productoPrincipal = 'Servicio de Taller';
         }
         
+        let totalRow = p.total;
+        if (categoriaFiltro) {
+          totalRow = p.items.reduce((sum, item) => {
+            const itemNom = (item.nombre || '').toLowerCase().trim();
+            const catNombre = (itemNom.startsWith('servicio:') || itemNom.includes('taller'))
+              ? 'Taller'
+              : (productoCategoriaMap[itemNom] || 'General');
+            if (catNombre.toLowerCase().trim() === categoriaFiltro) {
+              return sum + (parseFloat(item.precio) || 0) * (parseInt(item.cantidad) || 1);
+            }
+            return sum;
+          }, 0);
+        }
+
         return {
           fecha: fechaFormat,
           producto: p.items.length > 1 ? `${productoPrincipal} (+${p.items.length - 1} más)` : productoPrincipal,
           canal: p.canal_venta || 'Otro',
           pago: p.metodo_pago || 'Otro',
-          total: p.total
+          total: totalRow
         };
       });
 
     // --- EGRESOS (Gastos y Compras de Stock) ---
-    const gastos = await prisma.gasto.findMany();
+    const whereGastos = {};
+    if (dateRange) {
+      whereGastos.created_at = {
+        gte: dateRange.start,
+        lte: dateRange.end
+      };
+    }
+    const gastos = await prisma.gasto.findMany({ where: whereGastos });
     const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
 
+    const whereCompras = { tipo: 'entrada' };
+    if (dateRange) {
+      whereCompras.created_at = {
+        gte: dateRange.start,
+        lte: dateRange.end
+      };
+    }
     const comprasStock = await prisma.inventarioMovimiento.findMany({
-      where: { tipo: 'entrada' }
+      where: whereCompras
     });
     
     let comprasEfectivo = 0;
