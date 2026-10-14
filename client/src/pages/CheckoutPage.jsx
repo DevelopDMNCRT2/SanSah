@@ -45,6 +45,7 @@ const CheckoutPage = () => {
       try {
         const orderItems = cartItems.map(item => ({
           productoId: item.raw ? item.raw.id : item.id,
+          variationId: item.variationId || null,
           nombre: item.title,
           cantidad: item.quantity,
           precio: parseFloat(item.price.replace(/[^0-9.-]+/g, "")),
