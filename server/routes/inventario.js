@@ -13,16 +13,10 @@ router.get('/', async (req, res) => {
       orderBy: { nombre: 'asc' }
     });
 
-    // Para cada producto calculamos stock neto con los movimientos manuales
-    const movimientos = await prisma.inventarioMovimiento.findMany();
-    const movMap = {};
-    movimientos.forEach(m => {
-      if (!movMap[m.product_id]) movMap[m.product_id] = 0;
-      if (m.tipo === 'entrada') movMap[m.product_id] += m.cantidad;
-      else if (m.tipo === 'salida') movMap[m.product_id] -= m.cantidad;
-      else movMap[m.product_id] += m.cantidad; // ajuste directo
-    });
-
+    // Nota: products.stock / product_variations.stock ya reflejan ventas, compras,
+    // devoluciones y entradas manuales (cada operación actualiza el stock y además
+    // registra un movimiento como bitácora). Sumar los movimientos otra vez
+    // duplicaba el efecto y podía mostrar existencias negativas.
     const data = productos.map(p => ({
       id: p.id,
       nombre: p.nombre,
@@ -33,7 +27,7 @@ router.get('/', async (req, res) => {
       es_publico: p.es_publico,
       stock: p.es_variable
         ? p.variaciones.reduce((s, v) => s + (v.stock || 0), 0)
-        : (p.stock || 0) + (movMap[p.id] || 0),
+        : Math.max(0, p.stock || 0),
       variaciones_count: p.variaciones.length,
       variaciones: p.variaciones,
     }));

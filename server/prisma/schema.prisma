@@ -56,16 +56,17 @@ model Product {
 }
 
 model ProductVariation {
-  id         Int      @id @default(autoincrement())
-  product_id Int
-  valor      String
-  precio     Float?
-  stock      Int?
-  color      String?
-  imagen_url String?
-  costo_real Float?
+  id            Int      @id @default(autoincrement())
+  product_id    Int
+  valor         String
+  precio        Float?
+  stock         Int?
+  color         String?
+  imagen_url    String?
+  costo_real    Float?
+  codigo_barras String?
 
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("product_variations")
 }

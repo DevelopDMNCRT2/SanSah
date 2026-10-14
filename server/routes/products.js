@@ -77,7 +77,8 @@ router.post('/', upload.any(), async (req, res) => {
       stock: parseInt(v.stock) || 0,
       color: v.color || '#000000',
       imagen_url: varImgs[i] || v.imagen_url || null,
-      costo_real: parseFloat(v.costo_real) || null
+      costo_real: parseFloat(v.costo_real) || null,
+      codigo_barras: v.codigo_barras ? String(v.codigo_barras).trim() : null
     }));
 
     const product = await prisma.product.create({
@@ -149,7 +150,8 @@ router.put('/:id', upload.any(), async (req, res) => {
       stock: parseInt(v.stock) || 0,
       color: v.color || '#000000',
       imagen_url: varImgs[i] || v.imagen_url || null,
-      costo_real: parseFloat(v.costo_real) || null
+      costo_real: parseFloat(v.costo_real) || null,
+      codigo_barras: v.codigo_barras ? String(v.codigo_barras).trim() : null
     }));
 
     // For gallery, frontend should pass existing gallery urls or we just replace.

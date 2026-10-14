@@ -102,7 +102,7 @@ const cargar = async () => {
     const data = await res.json()
     clientes.value = data.map((c, i) => ({
       // La tabla ClientesTable espera: id, cid, nombre, email, alta, ultimaCompra, pedidos
-      id:           encodeURIComponent(c.correo || c.codigo),  // ID para la URL del detalle
+      id:           c.codigo || c.id,                           // ID para la URL del detalle (código único)
       cid:          c.codigo,                                   // Código único de 5 chars
       nombre:       c.nombre,
       email:        c.correo || null,                           // null si es cliente POS/Taller
@@ -128,8 +128,10 @@ const filtrados = computed(() => {
   if (!busqueda.value) return clientes.value
   const q = busqueda.value.toLowerCase()
   return clientes.value.filter(c =>
-    c.nombre.toLowerCase().includes(q) ||
-    c.email.toLowerCase().includes(q)
+    (c.nombre || '').toLowerCase().includes(q) ||
+    (c.email || '').toLowerCase().includes(q) ||
+    (c.telefono || '').toLowerCase().includes(q) ||
+    (c.cid || '').toLowerCase().includes(q)
   )
 })
 

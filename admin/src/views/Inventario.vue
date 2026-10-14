@@ -86,8 +86,10 @@
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Categoría</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Tipo</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Stock</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Precio</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Valor Total ($$)</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Costo Unit.</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Inversión ($$)</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Precio Vta.</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Valor Venta ($$)</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Acciones</p></th>
               </tr>
@@ -120,7 +122,7 @@
                   </span>
                 </td>
                 <!-- Stock -->
-                <td class="px-5 py-4 sm:px-6">
+                <td class="px-5 py-4 sm:px-6 whitespace-nowrap">
                   <span
                     v-if="!p.es_variable"
                     :class="(p.stock ?? 0) > 10 ? 'text-success-600 dark:text-success-500' : (p.stock ?? 0) > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-error-500'"
@@ -133,12 +135,20 @@
                     <span class="text-xs text-gray-400 font-normal">({{ (p.variaciones && p.variaciones.length > 0) ? `${p.variaciones.length} var.` : '—' }})</span>
                   </div>
                 </td>
-                <!-- Precio -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                <!-- Costo Unitario -->
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  {{ getProductCostDisplay(p) }}
+                </td>
+                <!-- Total Invertido ($$) -->
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                  ${{ getProductTotalCost(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                </td>
+                <!-- Precio Venta -->
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {{ getProductPriceDisplay(p) }}
                 </td>
                 <!-- Valor Total ($$) -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-bold text-success-600 dark:text-success-400">
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-bold text-success-600 dark:text-success-400 whitespace-nowrap">
                   ${{ getProductTotalValue(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
                 <!-- Estado -->
@@ -167,12 +177,31 @@
               </tr>
 
               <tr v-if="productosFiltrados.length === 0 && !loading">
-                <td colspan="9" class="px-5 py-16 text-center">
+                <td colspan="11" class="px-5 py-16 text-center">
                   <svg class="mx-auto mb-3 text-gray-300 dark:text-gray-600" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                   <p class="text-sm text-gray-400 dark:text-gray-500">No hay productos aún.</p>
                 </td>
               </tr>
             </tbody>
+            <tfoot v-if="productosFiltrados.length > 0">
+              <tr class="bg-gray-50/80 dark:bg-white/[0.03] border-t-2 border-gray-200 dark:border-gray-700 font-semibold text-theme-xs">
+                <td colspan="4" class="px-5 py-3.5 sm:px-6 text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  Total ({{ productosFiltrados.length }} productos)
+                </td>
+                <td class="px-5 py-3.5 sm:px-6 text-brand-600 dark:text-brand-400 font-bold whitespace-nowrap">
+                  {{ totalPiezasStock.toLocaleString('es-MX') }} pzas
+                </td>
+                <td class="px-5 py-3.5 sm:px-6 text-gray-400">—</td>
+                <td class="px-5 py-3.5 sm:px-6 text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">
+                  ${{ costoTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                </td>
+                <td class="px-5 py-3.5 sm:px-6 text-gray-400">—</td>
+                <td class="px-5 py-3.5 sm:px-6 text-success-600 dark:text-success-400 font-bold whitespace-nowrap">
+                  ${{ valorTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                </td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -401,6 +430,17 @@ const getProductPriceDisplay = (p) => {
   return p.precio ? `$${Number(p.precio).toFixed(2)}` : '—';
 };
 
+const getProductCostDisplay = (p) => {
+  if (p.es_variable) {
+    const costs = (p.variaciones || []).map(v => Number(v.costo_real) || 0).filter(c => c > 0);
+    if (costs.length === 0) return p.costo_real ? `$${Number(p.costo_real).toFixed(2)}` : '—';
+    const min = Math.min(...costs);
+    const max = Math.max(...costs);
+    return min === max ? `$${min.toFixed(2)}` : `$${min.toFixed(2)} - $${max.toFixed(2)}`;
+  }
+  return p.costo_real ? `$${Number(p.costo_real).toFixed(2)}` : '—';
+};
+
 const getProductTotalValue = (p) => {
   if (p.es_variable) {
     return (p.variaciones || []).reduce((acc, v) => {
@@ -508,10 +548,10 @@ const downloadPDF = () => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(`Total de piezas en stock: ${totalPiezasStock.value.toLocaleString('es-MX')}`, 14, 38);
-  doc.text(`Valor total de inventario: $${valorTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, 14, 45);
+  doc.text(`Costo total invertido: $${costoTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, 14, 45);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Costo de inversión: $${costoTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN  |  Productos listados: ${productosFiltrados.value.length}`, 14, 52);
+  doc.text(`Valor total de venta: $${valorTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN  |  Productos listados: ${productosFiltrados.value.length}`, 14, 52);
 
   doc.setDrawColor(...SANSAH_COLORS.naranja);
   doc.setLineWidth(1.2);
@@ -520,24 +560,42 @@ const downloadPDF = () => {
   const tableData = productosFiltrados.value.map(p => [
     p.nombre,
     p.tienda || 'General',
-    p.es_variable ? 'Variable' : 'Simple',
     String(getProductStock(p)),
+    getProductCostDisplay(p),
+    `$${getProductTotalCost(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     getProductPriceDisplay(p),
     `$${getProductTotalValue(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   ]);
 
   autoTable(doc, {
-    head: [['Producto', 'Categoría', 'Tipo', 'Stock', 'Precio', 'Valor Total']],
+    head: [['Producto', 'Categoría', 'Stock', 'Costo Unit.', 'Total Invertido ($$)', 'Precio Vta.', 'Total Venta ($$)']],
     body: tableData,
+    foot: [[
+      'TOTAL GENERAL',
+      `${productosFiltrados.value.length} prod.`,
+      `${totalPiezasStock.value.toLocaleString('es-MX')} pzas`,
+      '—',
+      `$${costoTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`,
+      '—',
+      `$${valorTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`
+    ]],
+    footStyles: {
+      fillColor: SANSAH_COLORS.negro,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 8
+    },
     startY: 60,
     theme: 'grid',
-    headStyles: { fillColor: SANSAH_COLORS.naranja, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-    styles: { fontSize: 8, cellPadding: 2.5 },
+    headStyles: { fillColor: SANSAH_COLORS.naranja, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    styles: { fontSize: 7.5, cellPadding: 2 },
     alternateRowStyles: { fillColor: SANSAH_COLORS.grisClaro },
     columnStyles: { 
-      3: { halign: 'right', fontStyle: 'bold' },
-      4: { halign: 'right' },
-      5: { halign: 'right', fontStyle: 'bold' }
+      2: { halign: 'right', fontStyle: 'bold' },
+      3: { halign: 'right' },
+      4: { halign: 'right', fontStyle: 'bold' },
+      5: { halign: 'right' },
+      6: { halign: 'right', fontStyle: 'bold' }
     },
     didDrawPage: (data) => {
       const pageH = doc.internal.pageSize.getHeight();

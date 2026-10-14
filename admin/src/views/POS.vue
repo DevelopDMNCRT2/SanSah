@@ -138,13 +138,19 @@
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
             <div v-for="producto in productosFiltrados" :key="producto.id"
                  @click="handleProductClick(producto)"
-                 class="cursor-pointer group flex flex-col">
+                 :class="isOutOfStock(producto) ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer'"
+                 class="group flex flex-col relative">
                <div class="h-36 sm:h-40 w-full mb-3 overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900 relative shadow-sm group-hover:shadow-lg transition-all group-hover:-translate-y-1">
                   <img v-if="producto.imagen_url" :src="producto.imagen_url" loading="lazy" decoding="async" alt="" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   <div v-else class="flex h-full items-center justify-center text-gray-400">
                     <svg class="h-8 w-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   </div>
                   <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                  <!-- Out of Stock Overlay Badge -->
+                  <div v-if="isOutOfStock(producto)" class="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
+                    <span class="bg-red-600 text-white text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow">Agotado</span>
+                  </div>
 
                   <!-- Price badge -->
                   <div v-if="showPrices" class="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-xl shadow-md border border-white/10">
@@ -183,10 +189,15 @@
             <div class="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-4">
               <div class="space-y-2">
                 <button v-for="(variacion, vIdx) in selectedProducto?.variaciones" :key="vIdx"
-                  @click="selectedVariacion = variacion"
-                  :class="selectedVariacion?.id === variacion.id
-                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-2 ring-brand-500/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                  @click="(Number(variacion.stock) || 0) > 0 || selectedProducto?.es_servicio ? selectedVariacion = variacion : null"
+                  :disabled="(Number(variacion.stock) || 0) <= 0 && !selectedProducto?.es_servicio"
+                  :class="[
+                    (Number(variacion.stock) || 0) <= 0 && !selectedProducto?.es_servicio
+                      ? 'opacity-40 bg-gray-100 dark:bg-gray-800/40 cursor-not-allowed border-gray-200 dark:border-gray-700'
+                      : selectedVariacion?.id === variacion.id
+                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10 ring-2 ring-brand-500/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ]"
                   class="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left">
                   <div class="flex items-center gap-3">
                     <div :class="[
@@ -198,7 +209,12 @@
                     </div>
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ variacion.valor }}</span>
                   </div>
-                  <span class="text-xs font-bold text-brand-600 dark:text-brand-400">{{ formatCurrency(variacion.precio) }}</span>
+                  <div class="flex items-center gap-3">
+                    <span v-if="!selectedProducto?.es_servicio" :class="(Number(variacion.stock) || 0) <= 0 ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-gray-500'" class="text-xs">
+                      {{ (Number(variacion.stock) || 0) <= 0 ? 'Agotado' : `${variacion.stock} disp.` }}
+                    </span>
+                    <span class="text-xs font-bold text-brand-600 dark:text-brand-400">{{ formatCurrency(variacion.precio) }}</span>
+                  </div>
                 </button>
               </div>
             </div>
@@ -211,8 +227,8 @@
               <span class="text-lg font-black text-brand-600 dark:text-brand-400">{{ formatCurrency(selectedVariacion?.precio || 0) }}</span>
             </div>
             <button @click="confirmAddToCart"
-              :disabled="!selectedVariacion"
-              :class="selectedVariacion ? 'bg-[#2D5A5A] hover:bg-[#244a4a] shadow-md hover:shadow-lg active:scale-[0.98]' : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'"
+              :disabled="!selectedVariacion || ((Number(selectedVariacion?.stock) || 0) <= 0 && !selectedProducto?.es_servicio)"
+              :class="selectedVariacion && ((Number(selectedVariacion?.stock) || 0) > 0 || selectedProducto?.es_servicio) ? 'bg-[#2D5A5A] hover:bg-[#244a4a] shadow-md hover:shadow-lg active:scale-[0.98]' : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'"
               class="w-full py-3.5 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
               Agregar a la Orden
@@ -622,7 +638,37 @@ const processScannedCode = (rawCode: string) => {
   if (!rawCode) return;
   const cleanCode = rawCode.trim().toLowerCase();
 
-  // Search product by barcode, id, or serial number
+  // 1. Search if barcode matches a specific variation
+  let foundVar: any = null;
+  let foundProductWithVar: any = null;
+
+  for (const p of productos.value) {
+    if (p.variaciones && p.variaciones.length > 0) {
+      const v = p.variaciones.find((v: any) => v.codigo_barras && v.codigo_barras.trim().toLowerCase() === cleanCode);
+      if (v) {
+        foundProductWithVar = p;
+        foundVar = v;
+        break;
+      }
+    }
+  }
+
+  if (foundVar && foundProductWithVar) {
+    const ok = addVariationToCart(foundProductWithVar, foundVar);
+    if (ok) {
+      playBeep(true);
+      showToast(`✓ Agregado: ${foundProductWithVar.nombre} (${foundVar.valor})`);
+      scannedProductSuccess.value = foundProductWithVar;
+      barcodeNotFoundCode.value = '';
+      barcodeInputValue.value = '';
+      nextTick(() => {
+        barcodeInputRef.value?.focus();
+      });
+    }
+    return;
+  }
+
+  // 2. Search product by barcode, id, or serial number
   const found = productos.value.find((p: any) =>
     (p.codigo_barras && p.codigo_barras.trim().toLowerCase() === cleanCode) ||
     p.id?.toString() === cleanCode ||
@@ -630,6 +676,11 @@ const processScannedCode = (rawCode: string) => {
   );
 
   if (found) {
+    if (isOutOfStock(found)) {
+      playBeep(false);
+      showToast(`⚠️ Producto agotado: "${found.nombre}" no tiene existencias`);
+      return;
+    }
     playBeep(true);
     handleProductClick(found);
     showToast(`✓ Agregado: ${found.nombre}`);
@@ -817,6 +868,7 @@ onMounted(() => {
           id: `taller-${srv.id}`,
           nombre: `Servicio: ${srv.bicicleta} - ${srv.cliente}`,
           precio: parseFloat(srv.costo) || 0,
+          es_servicio: true,
           imagen_url: '' // Placeholder nativo del POS
         },
         cantidad: 1,
@@ -853,8 +905,28 @@ onUnmounted(() => {
   if (toastTimeout) clearTimeout(toastTimeout);
 });
 
+// ── Stock Check Helper ──
+const isOutOfStock = (producto: any) => {
+  if (!producto) return false;
+  if (producto.es_servicio) return false;
+  if (producto.es_variable) {
+    const totalVarStock = (producto.variaciones || []).reduce(
+      (acc: number, v: any) => acc + (Number(v.stock) || 0),
+      0
+    );
+    return totalVarStock <= 0;
+  }
+  return (Number(producto.stock) || 0) <= 0;
+};
+
 // ── Product Click Handler ──
 const handleProductClick = (producto: any) => {
+  if (isOutOfStock(producto)) {
+    playBeep(false);
+    showToast(`⚠️ Producto agotado: "${producto.nombre}" no tiene existencias`);
+    return;
+  }
+
   if (producto.es_variable && producto.variaciones && producto.variaciones.length > 0) {
     selectedProducto.value = producto;
     selectedVariacion.value = null;
@@ -866,9 +938,23 @@ const handleProductClick = (producto: any) => {
 
 // ── Add to cart without variables ──
 const addToCartDirect = (producto: any) => {
+  if (isOutOfStock(producto)) {
+    playBeep(false);
+    showToast(`⚠️ Producto sin existencias`);
+    return;
+  }
+
   const existing = cart.value.find(
     item => item.producto.id === producto.id && !item.variacionSeleccionada
   );
+  
+  const currentStock = Number(producto.stock) || 0;
+  if (!producto.es_servicio && existing && existing.cantidad >= currentStock) {
+    playBeep(false);
+    showToast(`⚠️ Límite de existencias alcanzado (${currentStock} disponibles)`);
+    return;
+  }
+
   if (existing) {
     existing.cantidad++;
   } else {
@@ -876,25 +962,43 @@ const addToCartDirect = (producto: any) => {
   }
 };
 
-// ── Modal: confirm ──
-const confirmAddToCart = () => {
-  if (!selectedVariacion.value || !selectedProducto.value) return;
+const addVariationToCart = (producto: any, variacion: any): boolean => {
+  const varStock = Number(variacion.stock) || 0;
+  if (!producto.es_servicio && varStock <= 0) {
+    playBeep(false);
+    showToast(`⚠️ Variación agotada: "${producto.nombre} - ${variacion.valor}"`);
+    return false;
+  }
 
   const existing = cart.value.find(
-    item => item.producto.id === selectedProducto.value.id && item.variacionSeleccionada?.id === selectedVariacion.value.id
+    item => item.producto.id === producto.id && item.variacionSeleccionada?.id === variacion.id
   );
+
+  if (!producto.es_servicio && existing && existing.cantidad >= varStock) {
+    playBeep(false);
+    showToast(`⚠️ Límite de existencias alcanzado para ${variacion.valor} (${varStock} disponibles)`);
+    return false;
+  }
 
   if (existing) {
     existing.cantidad++;
   } else {
     cart.value.push({
-      producto: selectedProducto.value,
+      producto,
       cantidad: 1,
-      variacionSeleccionada: selectedVariacion.value
+      variacionSeleccionada: variacion
     });
   }
+  return true;
+};
 
-  closeVariableModal();
+// ── Modal: confirm ──
+const confirmAddToCart = () => {
+  if (!selectedVariacion.value || !selectedProducto.value) return;
+  const ok = addVariationToCart(selectedProducto.value, selectedVariacion.value);
+  if (ok) {
+    closeVariableModal();
+  }
 };
 
 const closeVariableModal = () => {
@@ -906,6 +1010,27 @@ const closeVariableModal = () => {
 // ── Cart Operations ──
 const updateQty = (index: number, delta: number) => {
   const item = cart.value[index];
+  if (!item) return;
+
+  if (delta > 0 && !item.producto.es_servicio) {
+    // Los items que vienen de Taller traen un objeto parcial: buscamos el producto real del catálogo
+    const real = productos.value.find((p: any) => p.id === item.producto.id);
+    if (real && !real.es_servicio) {
+      const realVar = item.variacionSeleccionada
+        ? (real.variaciones || []).find((v: any) => v.id === item.variacionSeleccionada.id)
+        : null;
+      const maxStock = item.variacionSeleccionada
+        ? (Number((realVar || item.variacionSeleccionada).stock) || 0)
+        : (Number(real.stock) || 0);
+
+      if (item.cantidad + delta > maxStock) {
+        playBeep(false);
+        showToast(`⚠️ Solo hay ${maxStock} pzas disponibles en stock`);
+        return;
+      }
+    }
+  }
+
   item.cantidad += delta;
   if (item.cantidad <= 0) {
     cart.value.splice(index, 1);
@@ -1028,7 +1153,10 @@ const processPayment = async () => {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error('Error al registrar pedido');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Error al registrar pedido');
+    }
     
     const savedOrder = await res.json();
 
@@ -1055,9 +1183,9 @@ const processPayment = async () => {
     };
     showPaymentModal.value = false;
     showConfirmationModal.value = true;
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    alert('Ocurrió un error al procesar el pago.');
+    alert(err.message || 'Ocurrió un error al procesar el pago.');
   } finally {
     isProcessingPayment.value = false;
   }
@@ -1171,6 +1299,7 @@ const closeConfirmationModal = () => {
   currentOrderNum.value = Math.floor(Math.random() * 9000) + 1000;
   paymentData.value = { method: '', nombre: '', telefono: '' };
   prefilledClientInfo.value = { nombre: '', telefono: '' };
+  fetchProductos();
 };
 </script>
 

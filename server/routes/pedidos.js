@@ -101,6 +101,34 @@ router.post('/', async (req, res) => {
     const orden = await generarOrden();
 
     const pedido = await prisma.$transaction(async (tx) => {
+      // 1. Validar existencias antes de proceder con la venta
+      for (const item of (items || [])) {
+        const prod = await tx.product.findFirst({
+          where: { nombre: item.nombre },
+          include: { variaciones: true }
+        });
+
+        if (prod && !prod.es_servicio) {
+          const qty = parseInt(item.cantidad) || 1;
+          if (prod.es_variable) {
+            const variation = prod.variaciones.find(v => v.valor === item.variante);
+            const varStock = variation ? (variation.stock || 0) : 0;
+            if (varStock < qty) {
+              const err = new Error(`Stock insuficiente para "${prod.nombre}${item.variante ? ` (${item.variante})` : ''}". Existencias disponibles: ${varStock}`);
+              err.statusCode = 400;
+              throw err;
+            }
+          } else {
+            const currentStock = prod.stock || 0;
+            if (currentStock < qty) {
+              const err = new Error(`Stock insuficiente para "${prod.nombre}". Existencias disponibles: ${currentStock}`);
+              err.statusCode = 400;
+              throw err;
+            }
+          }
+        }
+      }
+
       const pObj = await tx.pedido.create({
         data: {
           orden,
@@ -130,27 +158,26 @@ router.post('/', async (req, res) => {
         include: { items: true }
       });
 
-      // Descontar stock para cada producto vendido
+      // 2. Descontar stock para cada producto vendido evitando negativos
       for (const item of pObj.items) {
         const prod = await tx.product.findFirst({
           where: { nombre: item.nombre },
           include: { variaciones: true }
         });
 
-        if (prod) {
+        if (prod && !prod.es_servicio) {
           const qty = parseInt(item.cantidad) || 1;
           
           if (prod.es_variable) {
             if (item.variante) {
               const variation = prod.variaciones.find(v => v.valor === item.variante);
               if (variation) {
-                // Descontar stock de la variación
+                const currentVarStock = variation.stock || 0;
+                // Descontar stock de la variación sin permitir negativos
                 await tx.productVariation.update({
                   where: { id: variation.id },
                   data: {
-                    stock: {
-                      decrement: qty
-                    }
+                    stock: Math.max(0, currentVarStock - qty)
                   }
                 });
 
@@ -167,7 +194,7 @@ router.post('/', async (req, res) => {
               }
             }
           } else {
-            // Producto simple: descontar stock
+            // Producto simple: descontar stock sin permitir negativos
             const currentStock = prod.stock || 0;
             await tx.product.update({
               where: { id: prod.id },
@@ -196,7 +223,8 @@ router.post('/', async (req, res) => {
     res.status(201).json(pedido);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al crear pedido', details: err.message });
+    const status = err.statusCode || 500;
+    res.status(status).json({ error: err.message || 'Error al crear pedido', details: err.message });
   }
 });
 

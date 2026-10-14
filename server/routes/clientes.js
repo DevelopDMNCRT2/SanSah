@@ -63,17 +63,46 @@ router.get('/buscar', async (req, res) => {
   }
 });
 
-// GET /api/clientes/:correo  — detalle con pedidos del cliente (usado por ClienteDetalle.vue)
-router.get('/:correo', async (req, res) => {
+// GET /api/clientes/:ref  — detalle del cliente + historial de compras (usado por ClienteDetalle.vue)
+// :ref puede ser el id numérico, el código de 5 dígitos o (compatibilidad) el correo.
+router.get('/:ref', async (req, res) => {
   try {
-    const correo = decodeURIComponent(req.params.correo);
+    const ref = decodeURIComponent(req.params.ref).trim();
+    let cliente = null;
+
+    if (/^\d+$/.test(ref)) {
+      // Puede ser id interno o código visible (ambos numéricos)
+      cliente = await prisma.cliente.findUnique({ where: { codigo: ref } });
+      if (!cliente) cliente = await prisma.cliente.findUnique({ where: { id: parseInt(ref) } });
+    }
+    if (!cliente && ref.includes('@')) {
+      cliente = await prisma.cliente.findUnique({ where: { correo: ref } });
+    }
+    if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    // Pedidos vinculados por cliente_id + pedidos web antiguos sin vínculo pero con su correo
+    const or = [{ cliente_id: cliente.id }];
+    if (cliente.correo && cliente.correo !== 'pos@sansah.com') {
+      or.push({ cliente_id: null, correo: cliente.correo });
+    }
+
     const pedidos = await prisma.pedido.findMany({
-      where: { correo },
+      where: { OR: or },
       include: { items: true },
       orderBy: { created_at: 'desc' }
     });
-    if (!pedidos.length) return res.status(404).json({ error: 'Cliente no encontrado' });
-    res.json(pedidos);
+
+    res.json({
+      cliente: {
+        id: cliente.id,
+        codigo: cliente.codigo,
+        nombre: cliente.nombre,
+        correo: cliente.correo,
+        telefono: cliente.telefono,
+        created_at: cliente.created_at,
+      },
+      pedidos
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener detalle del cliente' });
