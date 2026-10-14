@@ -140,9 +140,10 @@
               <div>
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Código de Barras
-                  <span class="ml-1 text-xs font-normal text-error-500">*obligatorio</span>
+                  <span v-if="!form.esServicio && !form.esVariable" class="ml-1 text-xs font-normal text-error-500">*obligatorio</span>
+                  <span v-else-if="form.esVariable" class="ml-1 text-xs font-normal text-gray-400">(opcional si defines por variante)</span>
                 </label>
-                <input v-model="form.codigo_barras" type="text" :required="!form.esServicio" placeholder="Ej. 7501234567890"
+                <input v-model="form.codigo_barras" type="text" :required="!form.esServicio && !form.esVariable" placeholder="Ej. 7501234567890"
                   class="w-full h-11 rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent px-4 text-sm text-gray-900 dark:text-white/90 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
               </div>
             </div>
@@ -216,6 +217,11 @@
                     <div class="w-full md:flex-1">
                       <label class="block text-xs text-gray-500 mb-1">Combinación / Valor</label>
                       <input v-model="v.valor" type="text" placeholder="Ej. Rojo - S" class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm focus:border-brand-500 focus:outline-none" />
+                    </div>
+
+                    <div class="w-full md:w-36">
+                      <label class="block text-xs text-gray-500 mb-1">Cód. Barras</label>
+                      <input v-model="v.codigo_barras" type="text" placeholder="Código..." class="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm font-mono focus:border-brand-500 focus:outline-none" />
                     </div>
 
                     <div class="w-full md:flex-1">
@@ -511,6 +517,7 @@ onMounted(async () => {
       if (data.atributos) form.atributos = data.atributos;
       form.variaciones = data.variaciones.map(v => ({
         ...v,
+        codigo_barras: v.codigo_barras || '',
         color: v.color || '#000000',
         imagenPreview: v.imagen_url || null,  // Mostrar imagen existente
         imagen: null                           // null = sin nuevo archivo
@@ -604,6 +611,7 @@ const generarVariaciones = () => {
     
     return {
       valor,
+      codigo_barras: '',
       precio: '',
       costo_real: '',
       stock: '',
@@ -617,6 +625,7 @@ const generarVariaciones = () => {
 const addVariacion = () => {
   form.variaciones.push({
     valor: '',
+    codigo_barras: '',
     precio: '',
     costo_real: '',
     stock: '',
@@ -757,9 +766,11 @@ const guardar = async () => {
     alert('El nombre del producto es requerido');
     return;
   }
-  if (!form.esServicio && !form.codigo_barras.trim()) {
-    alert('El código de barras es obligatorio para productos físicos');
-    return;
+  if (!form.esServicio) {
+    if (!form.esVariable && !form.codigo_barras.trim()) {
+      alert('El código de barras es obligatorio para productos físicos');
+      return;
+    }
   }
   if (form.flag === 'Preventa' && (!form.preventaInicio || !form.preventaFin)) {
     alert('La preventa requiere fecha de inicio y fecha de fin');
@@ -794,12 +805,13 @@ const guardar = async () => {
     if (form.esVariable && form.variaciones.length > 0) {
       // Serialize variations: use imagen_url for existing images (not blob previews)
       const varsForJson = form.variaciones.map(v => ({
-        valor:      v.valor,
-        precio:     v.precio,
-        costo_real: v.costo_real,
-        stock:      v.stock,
-        color:      v.color,
-        imagen_url: v.imagen instanceof File ? null : (v.imagen_url || null)
+        valor:         v.valor,
+        codigo_barras: v.codigo_barras ? v.codigo_barras.trim() : null,
+        precio:        v.precio,
+        costo_real:    v.costo_real,
+        stock:         v.stock,
+        color:         v.color,
+        imagen_url:    v.imagen instanceof File ? null : (v.imagen_url || null)
       }));
       fd.append('variaciones', JSON.stringify(varsForJson));
       // Send each new variation image as a separate field

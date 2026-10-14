@@ -638,7 +638,37 @@ const processScannedCode = (rawCode: string) => {
   if (!rawCode) return;
   const cleanCode = rawCode.trim().toLowerCase();
 
-  // Search product by barcode, id, or serial number
+  // 1. Search if barcode matches a specific variation
+  let foundVar: any = null;
+  let foundProductWithVar: any = null;
+
+  for (const p of productos.value) {
+    if (p.variaciones && p.variaciones.length > 0) {
+      const v = p.variaciones.find((v: any) => v.codigo_barras && v.codigo_barras.trim().toLowerCase() === cleanCode);
+      if (v) {
+        foundProductWithVar = p;
+        foundVar = v;
+        break;
+      }
+    }
+  }
+
+  if (foundVar && foundProductWithVar) {
+    const ok = addVariationToCart(foundProductWithVar, foundVar);
+    if (ok) {
+      playBeep(true);
+      showToast(`✓ Agregado: ${foundProductWithVar.nombre} (${foundVar.valor})`);
+      scannedProductSuccess.value = foundProductWithVar;
+      barcodeNotFoundCode.value = '';
+      barcodeInputValue.value = '';
+      nextTick(() => {
+        barcodeInputRef.value?.focus();
+      });
+    }
+    return;
+  }
+
+  // 2. Search product by barcode, id, or serial number
   const found = productos.value.find((p: any) =>
     (p.codigo_barras && p.codigo_barras.trim().toLowerCase() === cleanCode) ||
     p.id?.toString() === cleanCode ||
@@ -932,38 +962,43 @@ const addToCartDirect = (producto: any) => {
   }
 };
 
-// ── Modal: confirm ──
-const confirmAddToCart = () => {
-  if (!selectedVariacion.value || !selectedProducto.value) return;
-
-  const varStock = Number(selectedVariacion.value.stock) || 0;
-  if (!selectedProducto.value.es_servicio && varStock <= 0) {
+const addVariationToCart = (producto: any, variacion: any): boolean => {
+  const varStock = Number(variacion.stock) || 0;
+  if (!producto.es_servicio && varStock <= 0) {
     playBeep(false);
-    showToast(`⚠️ Esta variación está agotada`);
-    return;
+    showToast(`⚠️ Variación agotada: "${producto.nombre} - ${variacion.valor}"`);
+    return false;
   }
 
   const existing = cart.value.find(
-    item => item.producto.id === selectedProducto.value.id && item.variacionSeleccionada?.id === selectedVariacion.value.id
+    item => item.producto.id === producto.id && item.variacionSeleccionada?.id === variacion.id
   );
 
-  if (!selectedProducto.value.es_servicio && existing && existing.cantidad >= varStock) {
+  if (!producto.es_servicio && existing && existing.cantidad >= varStock) {
     playBeep(false);
-    showToast(`⚠️ Límite de existencias alcanzado para ${selectedVariacion.value.valor} (${varStock} disponibles)`);
-    return;
+    showToast(`⚠️ Límite de existencias alcanzado para ${variacion.valor} (${varStock} disponibles)`);
+    return false;
   }
 
   if (existing) {
     existing.cantidad++;
   } else {
     cart.value.push({
-      producto: selectedProducto.value,
+      producto,
       cantidad: 1,
-      variacionSeleccionada: selectedVariacion.value
+      variacionSeleccionada: variacion
     });
   }
+  return true;
+};
 
-  closeVariableModal();
+// ── Modal: confirm ──
+const confirmAddToCart = () => {
+  if (!selectedVariacion.value || !selectedProducto.value) return;
+  const ok = addVariationToCart(selectedProducto.value, selectedVariacion.value);
+  if (ok) {
+    closeVariableModal();
+  }
 };
 
 const closeVariableModal = () => {
