@@ -1335,20 +1335,23 @@ footer {
 }
 
 .size-pill {
-  width: 54px;
-  height: 54px;
-  display: flex;
+  min-width: 50px;
+  width: auto;
+  height: 44px;
+  padding: 0 1.2rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   font-weight: 600;
   font-family: 'Jost', sans-serif;
   color: var(--text-primary);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .size-pill:hover {

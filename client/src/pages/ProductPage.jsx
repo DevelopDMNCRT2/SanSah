@@ -38,14 +38,22 @@ const ProductPage = () => {
           return true;
         }
 
-        // 2. Si v.valor tiene formato de combinación separada por ' - '
-        const vParts = v.valor.split(' - ').map(s => normalize(s));
-        if (vParts.length === selectedValues.length && vParts.every((val, idx) => val === selectedValues[idx])) {
+        // 2. Coincidencia por partes sin importar orden (ej. "Negro - M" vs "M - Negro")
+        const vParts = v.valor.split(/[-–—/]/).map(s => normalize(s)).filter(Boolean);
+        if (vParts.length === selectedValues.length && selectedValues.every(val => vParts.includes(val))) {
           return true;
         }
 
-        // 3. Coincidencia inclusiva si todos los valores seleccionados están contenidos
-        return selectedValues.length > 0 && selectedValues.every(val => vNorm.includes(val));
+        // 3. Si solo hay 1 atributo seleccionado, coincidencia directa con vNorm
+        if (selectedValues.length === 1 && vNorm === selectedValues[0]) {
+          return true;
+        }
+
+        // 4. Coincidencia inclusiva si todos los valores seleccionados están contenidos como palabra completa
+        return selectedValues.length > 0 && selectedValues.every(val => {
+          const regex = new RegExp(`(^|[^a-z0-9])${val}([^a-z0-9]|$)`, 'i');
+          return regex.test(vNorm);
+        });
       })
     : null;
 
@@ -185,6 +193,30 @@ const ProductPage = () => {
                   ? `$${parseFloat(matchedVariation.precio).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
                   : product.price}
               </p>
+
+              {/* Indicador de stock dinámico */}
+              {(() => {
+                const currentStock = product.raw.es_variable
+                  ? (matchedVariation ? (matchedVariation.stock ?? 0) : 0)
+                  : (product.raw.stock ?? 0);
+                const isAvailable = currentStock > 0;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '0.2rem' }}>
+                    <span style={{ 
+                      width: '10px', 
+                      height: '10px', 
+                      borderRadius: '50%', 
+                      backgroundColor: isAvailable ? '#10b981' : '#ef4444',
+                      boxShadow: isAvailable ? '0 0 8px rgba(16, 185, 129, 0.6)' : '0 0 8px rgba(239, 68, 68, 0.6)'
+                    }}></span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: isAvailable ? '#10b981' : '#ef4444' }}>
+                      {isAvailable 
+                        ? `En existencia (${currentStock} disponible${currentStock === 1 ? '' : 's'})` 
+                        : (product.raw.es_variable ? 'Agotado en este sabor / variante' : 'Agotado')}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
@@ -199,7 +231,7 @@ const ProductPage = () => {
               return (
                 <div key={attr.nombre} className="size-selector-container">
                   <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--text-accent)', display: 'block', marginBottom: '0.8rem', textTransform: 'uppercase' }}>
-                    {attr.nombre}
+                    {attr.nombre}: <span style={{ color: 'var(--brand-primary)', textTransform: 'none', fontWeight: 600 }}>{selectedAttributes[attr.nombre] || 'Seleccionar'}</span>
                   </span>
                   <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                     {options.map(opt => {

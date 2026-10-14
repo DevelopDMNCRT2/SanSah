@@ -246,7 +246,13 @@ const CheckoutPage = () => {
                   <img src={item.img} alt={item.title} style={{ width: '60px', height: '60px', borderRadius: '10px', objectFit: 'contain', background: 'var(--bg-primary)', padding: '5px' }} />
                   <div style={{ flex: 1 }}>
                     <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: '0 0 0.2rem 0' }}>{item.title}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>{item.size !== 'Única' && item.size ? `Variante: ${item.size}` : 'Producto Simple'}</p>
+                    {item.size && item.size !== 'Única' && (
+                      <div style={{ margin: '0.2rem 0' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand-primary)', background: 'rgba(232, 129, 30, 0.1)', padding: '2px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                          Sabor / Opción: {item.size}
+                        </span>
+                      </div>
+                    )}
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>Cant: {item.quantity}</p>
                   </div>
                   <div style={{ fontWeight: 'bold', color: 'var(--brand-primary)' }}>
