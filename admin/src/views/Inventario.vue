@@ -26,15 +26,41 @@
             </svg>
             Etiquetas
           </button>
-          
-          <div v-if="!loading" class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] px-4 py-2 flex items-center gap-3">
-            <div class="h-8 w-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-            </div>
-            <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Piezas</p>
-              <h3 class="text-lg font-bold text-gray-800 dark:text-white/90">{{ totalPiezasStock }}</h3>
-            </div>
+        </div>
+      </div>
+
+      <!-- Métricas de Inventario (Totales en Piezas y en $$) -->
+      <div v-if="!loading" class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Total Piezas Físicas -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+          <div class="h-12 w-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 shrink-0">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Piezas en Existencia</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90">{{ totalPiezasStock.toLocaleString('es-MX') }} <span class="text-xs font-normal text-gray-400">piezas</span></h3>
+          </div>
+        </div>
+
+        <!-- Valor Total Inventario ($$ Precio Venta) -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+          <div class="h-12 w-12 rounded-xl bg-success-500/10 flex items-center justify-center text-success-600 dark:text-success-400 shrink-0">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Valor Total Inventario (Venta)</p>
+            <h3 class="text-2xl font-bold text-success-600 dark:text-success-400">${{ valorTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
+          </div>
+        </div>
+
+        <!-- Costo Total Invertido (Costo Real) -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+          <div class="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Costo Total de Inversión</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90">${{ costoTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
           </div>
         </div>
       </div>
@@ -60,6 +86,8 @@
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Categoría</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Tipo</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Stock</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Precio</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Valor Total ($$)</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Acciones</p></th>
               </tr>
@@ -91,18 +119,27 @@
                     {{ p.es_variable ? 'Variable' : 'Simple' }}
                   </span>
                 </td>
-                <!-- Stock — clickeable -->
+                <!-- Stock -->
                 <td class="px-5 py-4 sm:px-6">
                   <span
                     v-if="!p.es_variable"
                     :class="(p.stock ?? 0) > 10 ? 'text-success-600 dark:text-success-500' : (p.stock ?? 0) > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-error-500'"
                     class="text-theme-sm font-medium"
                   >
-                    {{ (p.stock ?? 0) > 0 ? p.stock : 'Sin stock' }}
+                    {{ (p.stock ?? 0) > 0 ? `${p.stock} pzas` : 'Sin stock' }}
                   </span>
-                  <span v-else class="text-theme-sm font-medium text-blue-light-600 dark:text-blue-light-400">
-                    {{ (p.variaciones && p.variaciones.length > 0) ? `${p.variaciones.length} var.` : '—' }}
-                  </span>
+                  <div v-else class="text-theme-sm font-medium text-blue-light-600 dark:text-blue-light-400 flex flex-col">
+                    <span>{{ getProductStock(p) }} pzas</span>
+                    <span class="text-xs text-gray-400 font-normal">({{ (p.variaciones && p.variaciones.length > 0) ? `${p.variaciones.length} var.` : '—' }})</span>
+                  </div>
+                </td>
+                <!-- Precio -->
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ getProductPriceDisplay(p) }}
+                </td>
+                <!-- Valor Total ($$) -->
+                <td class="px-5 py-4 sm:px-6 text-theme-sm font-bold text-success-600 dark:text-success-400">
+                  ${{ getProductTotalValue(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
                 <!-- Estado -->
                 <td class="px-5 py-4 sm:px-6">
@@ -130,7 +167,7 @@
               </tr>
 
               <tr v-if="productosFiltrados.length === 0 && !loading">
-                <td colspan="7" class="px-5 py-16 text-center">
+                <td colspan="9" class="px-5 py-16 text-center">
                   <svg class="mx-auto mb-3 text-gray-300 dark:text-gray-600" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                   <p class="text-sm text-gray-400 dark:text-gray-500">No hay productos aún.</p>
                 </td>
@@ -346,10 +383,56 @@ const productosFiltrados = computed(() => {
   return lista;
 });
 
+const getProductStock = (p) => {
+  if (p.es_variable) {
+    return (p.variaciones || []).reduce((acc, v) => acc + (Number(v.stock) || 0), 0);
+  }
+  return Number(p.stock) || 0;
+};
+
+const getProductPriceDisplay = (p) => {
+  if (p.es_variable) {
+    const prices = (p.variaciones || []).map(v => Number(v.precio) || 0).filter(pr => pr > 0);
+    if (prices.length === 0) return p.precio ? `$${Number(p.precio).toFixed(2)}` : '—';
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return min === max ? `$${min.toFixed(2)}` : `$${min.toFixed(2)} - $${max.toFixed(2)}`;
+  }
+  return p.precio ? `$${Number(p.precio).toFixed(2)}` : '—';
+};
+
+const getProductTotalValue = (p) => {
+  if (p.es_variable) {
+    return (p.variaciones || []).reduce((acc, v) => {
+      const stock = Number(v.stock) || 0;
+      const precio = Number(v.precio) || Number(p.precio) || 0;
+      return acc + (stock * precio);
+    }, 0);
+  }
+  return (Number(p.stock) || 0) * (Number(p.precio) || 0);
+};
+
+const getProductTotalCost = (p) => {
+  if (p.es_variable) {
+    return (p.variaciones || []).reduce((acc, v) => {
+      const stock = Number(v.stock) || 0;
+      const costo = Number(v.costo_real) || Number(p.costo_real) || 0;
+      return acc + (stock * costo);
+    }, 0);
+  }
+  return (Number(p.stock) || 0) * (Number(p.costo_real) || 0);
+};
+
 const totalPiezasStock = computed(() => {
-  return productosFiltrados.value.reduce((total, p) => {
-    return total + (Number(p.stock) || 0);
-  }, 0);
+  return productosFiltrados.value.reduce((total, p) => total + getProductStock(p), 0);
+});
+
+const valorTotalInventario = computed(() => {
+  return productosFiltrados.value.reduce((total, p) => total + getProductTotalValue(p), 0);
+});
+
+const costoTotalInventario = computed(() => {
+  return productosFiltrados.value.reduce((total, p) => total + getProductTotalCost(p), 0);
 });
 
 // ── Modal Entrada de Stock ──────────────────────────────────────────────────
@@ -424,31 +507,38 @@ const downloadPDF = () => {
   doc.setTextColor(...SANSAH_COLORS.negro);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Total de piezas en stock: ${totalPiezasStock.value}`, 14, 40);
+  doc.text(`Total de piezas en stock: ${totalPiezasStock.value.toLocaleString('es-MX')}`, 14, 38);
+  doc.text(`Valor total de inventario: $${valorTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, 14, 45);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Productos listados: ${productosFiltrados.value.length}`, 14, 48);
+  doc.text(`Costo de inversión: $${costoTotalInventario.value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN  |  Productos listados: ${productosFiltrados.value.length}`, 14, 52);
 
   doc.setDrawColor(...SANSAH_COLORS.naranja);
   doc.setLineWidth(1.2);
-  doc.line(14, 52, pageW - 14, 52);
+  doc.line(14, 55, pageW - 14, 55);
 
   const tableData = productosFiltrados.value.map(p => [
     p.nombre,
     p.tienda || 'General',
     p.es_variable ? 'Variable' : 'Simple',
-    String(p.stock ?? 0)
+    String(getProductStock(p)),
+    getProductPriceDisplay(p),
+    `$${getProductTotalValue(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   ]);
 
   autoTable(doc, {
-    head: [['Producto', 'Categoría', 'Tipo', 'Unidades']],
+    head: [['Producto', 'Categoría', 'Tipo', 'Stock', 'Precio', 'Valor Total']],
     body: tableData,
-    startY: 57,
+    startY: 60,
     theme: 'grid',
-    headStyles: { fillColor: SANSAH_COLORS.naranja, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
-    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: SANSAH_COLORS.naranja, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    styles: { fontSize: 8, cellPadding: 2.5 },
     alternateRowStyles: { fillColor: SANSAH_COLORS.grisClaro },
-    columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } },
+    columnStyles: { 
+      3: { halign: 'right', fontStyle: 'bold' },
+      4: { halign: 'right' },
+      5: { halign: 'right', fontStyle: 'bold' }
+    },
     didDrawPage: (data) => {
       const pageH = doc.internal.pageSize.getHeight();
       doc.setFillColor(...SANSAH_COLORS.negro);
