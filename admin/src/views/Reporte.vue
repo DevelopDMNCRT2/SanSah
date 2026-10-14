@@ -62,6 +62,85 @@
           </div>
         </div>
 
+        <!-- Sección: Desglose Mensual y por Categorías -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+          <!-- Gráfica Ventas por Mes -->
+          <div class="lg:col-span-8 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-base font-semibold text-gray-800 dark:text-white/90">Ventas Totales por Mes</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Histórico mensual de ingresos facturados</p>
+              </div>
+            </div>
+            <div class="min-h-[300px]">
+              <VueApexCharts type="bar" height="300" :options="mensualOptions" :series="mensualSeries" />
+            </div>
+          </div>
+
+          <!-- Gráfica Ventas por Categoría -->
+          <div class="lg:col-span-4 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+            <div class="mb-4">
+              <h2 class="text-base font-semibold text-gray-800 dark:text-white/90">Ventas por Categoría</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de ingresos por tipo de producto</p>
+            </div>
+            <div class="min-h-[300px] flex items-center justify-center">
+              <VueApexCharts type="donut" height="300" :options="categoriaOptions" :series="categoriaSeries" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Resumen: Desglose Mensual de Ventas y Categorías -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-gray-800 dark:text-white/90">Desglose Detallado por Mes y Categorías</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Resumen mensual de transacciones e ingresos por departamento</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+              <thead>
+                <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                  <th class="py-3 px-4">Mes / Período</th>
+                  <th class="py-3 px-4 text-center">Pedidos</th>
+                  <th class="py-3 px-4 text-right">Venta Total</th>
+                  <th class="py-3 px-4 text-right">Ticket Promedio</th>
+                  <th class="py-3 px-4">Desglose por Categorías</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                <tr v-for="m in tablaMensual" :key="m.mes_key" class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+                  <td class="py-3.5 px-4 font-semibold text-gray-800 dark:text-white/90">{{ m.mes }}</td>
+                  <td class="py-3.5 px-4 text-center font-medium text-gray-700 dark:text-gray-300">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                      {{ m.pedidos }} pedidos
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-bold text-success-600 dark:text-success-400">
+                    ${{ m.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-medium text-gray-600 dark:text-gray-400">
+                    ${{ m.ticket_promedio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="flex flex-wrap gap-1.5">
+                      <span v-for="c in m.categorias" :key="c.nombre" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-brand-500/20">
+                        <span class="font-medium">{{ c.nombre }}:</span>
+                        <span class="font-bold">${{ c.total.toLocaleString('es-MX') }}</span>
+                        <span class="text-xs opacity-75">({{ c.porcentaje }}%)</span>
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="!tablaMensual || tablaMensual.length === 0">
+                  <td colspan="5" class="py-8 text-center text-gray-400">No hay ventas registradas en el período seleccionado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Charts Grid 1 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
           
@@ -141,6 +220,67 @@ const fetchData = async () => {
   } catch (e) { console.error('Error fetching reporte:', e); }
   finally { loading.value = false; }
 };
+
+// --- Tabla y Gráficas Mensuales y por Categoría ---
+const tablaMensual = computed(() => reporteData.value?.tabla_mensual || []);
+
+const mensualSeries = computed(() => [{
+  name: 'Ventas Totales ($)',
+  data: reporteData.value?.ventas_mensuales?.series || []
+}]);
+
+const mensualOptions = computed(() => ({
+  chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, background: 'transparent' },
+  colors: ['#E8811E'],
+  plotOptions: { 
+    bar: { 
+      borderRadius: 6,
+      columnWidth: '40%',
+      distributed: false
+    } 
+  },
+  dataLabels: { 
+    enabled: true, 
+    formatter: (val) => `$${Number(val).toLocaleString('es-MX')}`,
+    style: { fontSize: '11px', fontWeight: 'bold', colors: ['#374151'] },
+    offsetY: -20
+  },
+  legend: { show: false },
+  xaxis: {
+    categories: reporteData.value?.ventas_mensuales?.labels || [],
+    labels: { style: { colors: '#9CA3AF' } }
+  },
+  yaxis: {
+    labels: { 
+      formatter: (val) => `$${Number(val).toLocaleString('es-MX')}`,
+      style: { colors: '#6B7280' } 
+    }
+  },
+  grid: { borderColor: '#F3F4F6', strokeDashArray: 4 },
+  tooltip: {
+    theme: 'light',
+    y: { formatter: (val) => `$${Number(val).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN` }
+  }
+}));
+
+const categoriaSeries = computed(() => reporteData.value?.ventas_por_categoria?.series || []);
+const categoriaOptions = computed(() => ({
+  chart: { type: 'donut', fontFamily: 'inherit', background: 'transparent' },
+  labels: reporteData.value?.ventas_por_categoria?.labels || [],
+  colors: ['#E8811E', '#237650', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'],
+  stroke: { width: 0 },
+  dataLabels: { 
+    enabled: true, 
+    formatter: (val) => val.toFixed(1) + "%",
+    style: { fontSize: '13px', fontWeight: 'bold', colors: ['#000000'] },
+    dropShadow: { enabled: false }
+  },
+  legend: { position: 'bottom', labels: { colors: '#9CA3AF' } },
+  tooltip: {
+    theme: 'light',
+    y: { formatter: (val) => `$${Number(val).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN` }
+  }
+}));
 
 // --- Opciones Gráfica Formas de Pago ---
 const pagoSeries = computed(() => reporteData.value?.ingresos_forma_pago?.series || []);
@@ -264,9 +404,48 @@ const downloadSalesPDF = () => {
   // ── Línea separadora naranja ──────────────────────────────────
   doc.setDrawColor(...SANSAH_COLORS.naranja);
   doc.setLineWidth(1.2);
-  doc.line(14, 50, pageW - 14, 50);
+  doc.line(14, 48, pageW - 14, 48);
 
-  // ── Tabla ─────────────────────────────────────────────────────
+  // ── Tabla 1: Desglose Mensual y por Categorías ─────────────────
+  const mensualTableData = (reporteData.value.tabla_mensual || []).map((m) => [
+    m.mes,
+    String(m.pedidos),
+    `$${m.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+    `$${m.ticket_promedio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+    m.categorias.map(c => `${c.nombre}: $${c.total.toLocaleString('es-MX')} (${c.porcentaje}%)`).join('  |  ')
+  ]);
+
+  let nextY = 53;
+  if (mensualTableData.length > 0) {
+    autoTable(doc, {
+      head: [['Mes / Período', 'Pedidos', 'Venta Total', 'Ticket Promedio', 'Desglose por Categorías']],
+      body: mensualTableData,
+      startY: nextY,
+      theme: 'grid',
+      headStyles: {
+        fillColor: SANSAH_COLORS.naranja,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      alternateRowStyles: { fillColor: SANSAH_COLORS.grisClaro },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'right', fontStyle: 'bold' },
+        3: { halign: 'right' },
+        4: { fontSize: 7.5 }
+      }
+    });
+    nextY = (doc).lastAutoTable.finalY + 12;
+  }
+
+  // ── Tabla 2: Listado de Ventas Detalladas ───────────────────────
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...SANSAH_COLORS.negro);
+  doc.text('Detalle de Ventas Registradas', 14, nextY - 4);
+
   const rowsData = reporteData.value.rows || [];
   const tableData = rowsData.map((r) => [
     r.fecha,
@@ -279,15 +458,15 @@ const downloadSalesPDF = () => {
   autoTable(doc, {
     head: [['Fecha', 'Producto', 'Canal de Venta', 'Forma de Pago', 'Total (MXN)']],
     body: tableData,
-    startY: 55,
+    startY: nextY,
     theme: 'grid',
     headStyles: {
-      fillColor: SANSAH_COLORS.naranja,
+      fillColor: SANSAH_COLORS.negro,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 10
+      fontSize: 9
     },
-    styles: { fontSize: 9, cellPadding: 3 },
+    styles: { fontSize: 8, cellPadding: 2 },
     alternateRowStyles: { fillColor: SANSAH_COLORS.grisClaro },
     columnStyles: {
       4: { halign: 'right', fontStyle: 'bold' }
