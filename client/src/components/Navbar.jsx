@@ -236,11 +236,23 @@ const Navbar = () => {
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {cartItems.map(item => (
-                <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
-                  <img src={item.img} alt={item.title} style={{ width: '60px', height: '60px', objectFit: 'contain', background: 'var(--bg-secondary)', borderRadius: '8px' }} />
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.9rem' }}>{item.title}</h4>
+              {cartItems.map((item, idx) => (
+                <div key={item.cartItemId || `${item.id}-${idx}`} style={{ display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+                  <img 
+                    src={item.img || item.raw?.imagen_url} 
+                    alt={item.title} 
+                    style={{ width: '64px', height: '64px', objectFit: 'contain', background: 'var(--bg-secondary)', borderRadius: '8px', padding: '4px', flexShrink: 0 }} 
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.9rem', lineHeight: '1.2' }}>{item.title}</h4>
+                    {item.size && item.size !== 'Única' && (
+                      <div style={{ margin: '0.15rem 0 0.35rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sabor/Opción:</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand-primary)', background: 'rgba(232, 129, 30, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                          {item.size}
+                        </span>
+                      </div>
+                    )}
                     <span style={{ color: 'var(--brand-primary)', fontWeight: 'bold' }}>{item.price}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '0.5rem' }}>
                       <button style={{ border:'1px solid var(--glass-border)', background:'transparent', width:'24px', borderRadius:'4px', cursor:'pointer'}} onClick={() => updateQuantity(item.cartItemId || item.id, -1)}>-</button>
@@ -248,7 +260,7 @@ const Navbar = () => {
                       <button style={{ border:'1px solid var(--glass-border)', background:'transparent', width:'24px', borderRadius:'4px', cursor:'pointer'}} onClick={() => updateQuantity(item.cartItemId || item.id, 1)}>+</button>
                     </div>
                   </div>
-                  <button onClick={() => removeFromCart(item.cartItemId || item.id)} style={{ background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+                  <button onClick={() => removeFromCart(item.cartItemId || item.id)} style={{ background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '1.2rem', padding: '4px' }} title="Quitar">✕</button>
                 </div>
               ))}
             </div>
