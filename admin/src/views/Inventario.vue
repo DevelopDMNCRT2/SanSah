@@ -1,6 +1,6 @@
 <template>
   <AdminLayout>
-    <div class="space-y-5 sm:space-y-6">
+    <div class="space-y-5 sm:space-y-6 w-full min-w-0">
 
       <!-- Page Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -32,41 +32,41 @@
       <!-- Métricas de Inventario (Totales en Piezas y en $$) -->
       <div v-if="!loading" class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <!-- Total Piezas Físicas -->
-        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4 min-w-0">
           <div class="h-12 w-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 shrink-0">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           </div>
-          <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Piezas en Existencia</p>
-            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90">{{ totalPiezasStock.toLocaleString('es-MX') }} <span class="text-xs font-normal text-gray-400">piezas</span></h3>
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">Total Piezas en Existencia</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90 truncate">{{ totalPiezasStock.toLocaleString('es-MX') }} <span class="text-xs font-normal text-gray-400">piezas</span></h3>
           </div>
         </div>
 
         <!-- Valor Total Inventario ($$ Precio Venta) -->
-        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4 min-w-0">
           <div class="h-12 w-12 rounded-xl bg-success-500/10 flex items-center justify-center text-success-600 dark:text-success-400 shrink-0">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
-          <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Valor Total Inventario (Venta)</p>
-            <h3 class="text-2xl font-bold text-success-600 dark:text-success-400">${{ valorTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">Valor Total Inventario (Venta)</p>
+            <h3 class="text-2xl font-bold text-success-600 dark:text-success-400 truncate">${{ valorTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
           </div>
         </div>
 
         <!-- Costo Total Invertido (Costo Real) -->
-        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4">
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 flex items-center gap-4 min-w-0">
           <div class="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
           </div>
-          <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Costo Total de Inversión</p>
-            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90">${{ costoTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">Costo Total de Inversión</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white/90 truncate">${{ costoTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} <span class="text-xs font-normal text-gray-400">MXN</span></h3>
           </div>
         </div>
       </div>
 
       <!-- Card -->
-      <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden w-full">
 
         <!-- Loading state -->
         <div v-if="loading" class="flex items-center justify-center py-20">
@@ -76,53 +76,53 @@
           </svg>
         </div>
 
-        <!-- Table -->
-        <div v-else class="max-w-full overflow-x-auto custom-scrollbar">
-          <table class="min-w-full">
+        <!-- Table Container con scroll horizontal interno garantizado -->
+        <div v-else class="w-full overflow-x-auto custom-scrollbar">
+          <table class="w-full min-w-[960px] text-left border-collapse">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
-                <th class="px-5 py-3 text-left sm:px-6 w-14"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Img</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Producto</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Categoría</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Tipo</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Stock</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Costo Unit.</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Inversión ($$)</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Precio Vta.</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Valor Venta ($$)</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Acciones</p></th>
+                <th class="px-4 py-3 text-left sm:px-5 w-14"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Img</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Producto</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Categoría</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Tipo</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Stock</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Costo Unit.</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Inversión ($$)</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Precio Vta.</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Valor Venta ($$)</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
+                <th class="px-4 py-3 text-left sm:px-5"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Acciones</p></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
               <tr v-for="p in productosFiltrados" :key="p.id" class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
                 <!-- Img -->
-                <td class="px-5 py-3 sm:px-6">
+                <td class="px-4 py-3 sm:px-5">
                   <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <img v-if="p.imagen_url" :src="p.imagen_url" :alt="p.nombre" class="w-full h-full object-cover" />
                     <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-400"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   </div>
                 </td>
                 <!-- Nombre -->
-                <td class="px-5 py-4 sm:px-6 min-w-[180px]">
+                <td class="px-4 py-3.5 sm:px-5 min-w-[170px]">
                   <p class="font-semibold text-gray-800 text-theme-sm dark:text-white/90">{{ p.nombre }}</p>
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{{ p.slug }}</p>
                 </td>
                 <!-- Categoría -->
-                <td class="px-5 py-4 sm:px-6">
+                <td class="px-4 py-3.5 sm:px-5">
                   <span class="text-theme-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
                     {{ p.tienda || 'General' }}
                   </span>
                 </td>
                 <!-- Tipo -->
-                <td class="px-5 py-4 sm:px-6">
+                <td class="px-4 py-3.5 sm:px-5">
                   <span :class="p.es_variable ? 'bg-blue-light-50 text-blue-light-700 dark:bg-blue-light-500/15 dark:text-blue-light-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                     class="rounded-full px-2.5 py-0.5 text-theme-xs font-medium">
                     {{ p.es_variable ? 'Variable' : 'Simple' }}
                   </span>
                 </td>
                 <!-- Stock -->
-                <td class="px-5 py-4 sm:px-6 whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 whitespace-nowrap">
                   <span
                     v-if="!p.es_variable"
                     :class="(p.stock ?? 0) > 10 ? 'text-success-600 dark:text-success-500' : (p.stock ?? 0) > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-error-500'"
@@ -136,30 +136,30 @@
                   </div>
                 </td>
                 <!-- Costo Unitario -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-theme-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {{ getProductCostDisplay(p) }}
                 </td>
                 <!-- Total Invertido ($$) -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-theme-sm font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                   ${{ getProductTotalCost(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
                 <!-- Precio Venta -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-theme-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {{ getProductPriceDisplay(p) }}
                 </td>
                 <!-- Valor Total ($$) -->
-                <td class="px-5 py-4 sm:px-6 text-theme-sm font-bold text-success-600 dark:text-success-400 whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-theme-sm font-bold text-success-600 dark:text-success-400 whitespace-nowrap">
                   ${{ getProductTotalValue(p).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
                 <!-- Estado -->
-                <td class="px-5 py-4 sm:px-6">
+                <td class="px-4 py-3.5 sm:px-5">
                   <span :class="p.es_publico ? 'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                     class="rounded-full px-2.5 py-0.5 text-theme-xs font-medium">
                     {{ p.es_publico ? 'Publicado' : 'Borrador' }}
                   </span>
                 </td>
                 <!-- Acciones -->
-                <td class="px-5 py-4 sm:px-6">
+                <td class="px-4 py-3.5 sm:px-5">
                   <button
                     @click="abrirModalEtiquetas(p)"
                     title="Imprimir etiquetas"
@@ -177,7 +177,7 @@
               </tr>
 
               <tr v-if="productosFiltrados.length === 0 && !loading">
-                <td colspan="11" class="px-5 py-16 text-center">
+                <td colspan="11" class="px-4 py-16 text-center">
                   <svg class="mx-auto mb-3 text-gray-300 dark:text-gray-600" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                   <p class="text-sm text-gray-400 dark:text-gray-500">No hay productos aún.</p>
                 </td>
@@ -185,18 +185,18 @@
             </tbody>
             <tfoot v-if="productosFiltrados.length > 0">
               <tr class="bg-gray-50/80 dark:bg-white/[0.03] border-t-2 border-gray-200 dark:border-gray-700 font-semibold text-theme-xs">
-                <td colspan="4" class="px-5 py-3.5 sm:px-6 text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <td colspan="4" class="px-4 py-3.5 sm:px-5 text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   Total ({{ productosFiltrados.length }} productos)
                 </td>
-                <td class="px-5 py-3.5 sm:px-6 text-brand-600 dark:text-brand-400 font-bold whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-brand-600 dark:text-brand-400 font-bold whitespace-nowrap">
                   {{ totalPiezasStock.toLocaleString('es-MX') }} pzas
                 </td>
-                <td class="px-5 py-3.5 sm:px-6 text-gray-400">—</td>
-                <td class="px-5 py-3.5 sm:px-6 text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-gray-400">—</td>
+                <td class="px-4 py-3.5 sm:px-5 text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">
                   ${{ costoTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-5 py-3.5 sm:px-6 text-gray-400">—</td>
-                <td class="px-5 py-3.5 sm:px-6 text-success-600 dark:text-success-400 font-bold whitespace-nowrap">
+                <td class="px-4 py-3.5 sm:px-5 text-gray-400">—</td>
+                <td class="px-4 py-3.5 sm:px-5 text-success-600 dark:text-success-400 font-bold whitespace-nowrap">
                   ${{ valorTotalInventario.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </td>
                 <td colspan="2"></td>

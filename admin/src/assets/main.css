@@ -183,6 +183,10 @@ layer(base);
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+  html,
+  body {
+    @apply max-w-full overflow-x-hidden;
+  }
   body {
     @apply relative font-normal font-outfit z-1 bg-gray-50;
   }
