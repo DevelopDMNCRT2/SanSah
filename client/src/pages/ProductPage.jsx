@@ -14,11 +14,38 @@ const ProductPage = () => {
   // Find product logic parsing ID explicitly
   const product = products.find(p => String(p.id) === String(productId));
 
-  const selectedValues = Object.values(selectedAttributes).map(v => v.toLowerCase().trim());
-  const matchedVariation = product?.raw?.es_variable && product?.raw?.variaciones 
+  // Helper de normalización para coincidencia segura
+  const normalize = (str) =>
+    String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const selectedValues = Object.values(selectedAttributes)
+    .filter(Boolean)
+    .map(v => normalize(v));
+
+  // Búsqueda inteligente de la variación seleccionada
+  const matchedVariation = product?.raw?.es_variable && product?.raw?.variaciones?.length > 0
     ? product.raw.variaciones.find(v => {
-        const vValues = v.valor.toLowerCase().split('-').map(s => s.trim());
-        return vValues.every(val => selectedValues.includes(val));
+        if (!v || !v.valor) return false;
+        const vNorm = normalize(v.valor);
+
+        // 1. Coincidencia idéntica directa
+        const fullSelectedStr = selectedValues.join(' - ');
+        if (vNorm === fullSelectedStr || vNorm === selectedValues.join(' ')) {
+          return true;
+        }
+
+        // 2. Si v.valor tiene formato de combinación separada por ' - '
+        const vParts = v.valor.split(' - ').map(s => normalize(s));
+        if (vParts.length === selectedValues.length && vParts.every((val, idx) => val === selectedValues[idx])) {
+          return true;
+        }
+
+        // 3. Coincidencia inclusiva si todos los valores seleccionados están contenidos
+        return selectedValues.length > 0 && selectedValues.every(val => vNorm.includes(val));
       })
     : null;
 
@@ -35,13 +62,32 @@ const ProductPage = () => {
     }
   }, [product]);
 
+  // Actualización dinámica de imagen al cambiar variación/sabor
   useEffect(() => {
     if (matchedVariation && matchedVariation.imagen_url) {
       setCurrentImage(matchedVariation.imagen_url);
     } else if (product) {
-      setCurrentImage(product.img);
+      // Si la variación no tiene imagen_url individual, buscar en la galería del producto por nombre o índice
+      let foundGalleryImg = null;
+      if (matchedVariation && product.raw?.galeria_urls?.length > 0) {
+        // Intentar coincidir por texto en la URL
+        foundGalleryImg = product.raw.galeria_urls.find(url => {
+          const urlClean = normalize(url);
+          return selectedValues.some(val => val.length > 3 && urlClean.includes(val));
+        });
+
+        // O coincidir por índice posicional de la variación con la galería
+        if (!foundGalleryImg) {
+          const varIndex = product.raw.variaciones.findIndex(v => v.id === matchedVariation.id);
+          if (varIndex >= 0 && product.raw.galeria_urls[varIndex]) {
+            foundGalleryImg = product.raw.galeria_urls[varIndex];
+          }
+        }
+      }
+
+      setCurrentImage(foundGalleryImg || product.img);
     }
-  }, [matchedVariation, product]);
+  }, [matchedVariation, selectedAttributes, product]);
 
   if (loading) {
     return (
@@ -72,17 +118,16 @@ const ProductPage = () => {
     const finalPrice = matchedVariation && matchedVariation.precio 
       ? `$${parseFloat(matchedVariation.precio).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
       : product.price;
-    const finalImg = matchedVariation && matchedVariation.imagen_url ? matchedVariation.imagen_url : product.img;
+    const finalImg = (matchedVariation && matchedVariation.imagen_url) || currentImage || product.img;
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart({ 
-        ...product, 
-        size: finalVariant,
-        price: finalPrice,
-        img: finalImg,
-        cartItemId: `${product.id}-${finalVariant}`
-      });
-    }
+    addToCart({ 
+      ...product, 
+      size: finalVariant,
+      price: finalPrice,
+      img: finalImg,
+      variationId: matchedVariation?.id || null,
+      cartItemId: `${product.id}-${finalVariant}`
+    }, quantity);
   };
 
   return (
