@@ -530,7 +530,7 @@
               <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pb-6">
                 <div 
                   v-for="producto in productosModalFiltrados" 
-                  :key="producto.id"
+                  :key="producto.key"
                   @click="seleccionarRefaccionBuscada(producto)"
                   class="cursor-pointer group flex flex-col bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-95"
                 >
@@ -547,7 +547,10 @@
                    </div>
                    <div class="p-2 flex-1 flex flex-col justify-between">
                      <h4 class="font-bold text-[11px] text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">{{ producto.nombre }}</h4>
-                     <p class="text-[9px] text-gray-400 mt-1 uppercase">{{ producto.tienda }}</p>
+                     <div class="flex justify-between items-center mt-1 gap-1">
+                       <p class="text-[9px] text-gray-400 uppercase truncate">{{ producto.es_servicio ? 'Servicio' : producto.tienda }}</p>
+                       <span v-if="!producto.es_servicio && producto.stock != null" class="text-[9px] font-bold shrink-0" :class="Number(producto.stock) > 0 ? 'text-green-600' : 'text-red-500'">{{ Number(producto.stock) > 0 ? `${producto.stock} pzas` : 'Agotado' }}</span>
+                     </div>
                    </div>
                 </div>
               </div>
@@ -578,11 +581,31 @@ const productosList = ref([]);
 const serviciosList = computed(() => {
   return productosList.value.filter(p => p.es_servicio);
 });
+// Issue #21 — El catálogo de extras incluye TODO el inventario (refacciones,
+// accesorios, etc.) además de los servicios. Antes solo pasaban productos con
+// tienda exactamente "refacciones", que en producción no existe.
+// Las variaciones se muestran como opciones independientes con su propio precio.
 const refaccionesList = computed(() => {
-  return productosList.value.filter(p => {
-    const t = (p.tienda || '').toLowerCase();
-    return t === 'refacciones' || p.es_servicio;
-  });
+  const lista = [];
+  for (const p of productosList.value) {
+    const vars = Array.isArray(p.variaciones) ? p.variaciones : [];
+    if (!p.es_servicio && vars.length > 0) {
+      for (const v of vars) {
+        lista.push({
+          ...p,
+          key: `${p.id}-${v.id}`,
+          nombre: `${p.nombre} - ${v.valor}`,
+          precio: v.precio ?? p.precio,
+          stock: v.stock,
+          imagen_url: v.imagen_url || p.imagen_url,
+          codigo_barras: v.codigo_barras || p.codigo_barras,
+        });
+      }
+    } else {
+      lista.push({ ...p, key: String(p.id) });
+    }
+  }
+  return lista;
 });
 const fetchProductos = async () => {
   try {
@@ -670,21 +693,28 @@ const piezasActuales = ref([]);
 const busquedaModal = ref('');
 const activeCategoriaModal = ref('Todos');
 
-// Extraemos las categorías solo de Refacciones y Servicios
+// Pestañas: Todos, Servicios, y luego cada categoría del inventario
 const categoriasModal = computed(() => {
-  const cats = new Set(refaccionesList.value.map(p => p.tienda || 'General'));
-  return ['Todos', ...Array.from(cats)].filter(Boolean);
+  const cats = new Set(refaccionesList.value.filter(p => !p.es_servicio).map(p => p.tienda || 'General'));
+  const sorted = Array.from(cats).sort((a, b) => {
+    // "Refacciones" primero si existe
+    const ra = /refacc/i.test(a) ? 0 : 1, rb = /refacc/i.test(b) ? 0 : 1;
+    return ra - rb || a.localeCompare(b, 'es');
+  });
+  return ['Todos', 'Servicios', ...sorted];
 });
 
 const productosModalFiltrados = computed(() => {
   let lista = refaccionesList.value; // Solo refacciones y servicios
   
-  if (activeCategoriaModal.value !== 'Todos') {
-    lista = lista.filter(p => (p.tienda || 'General') === activeCategoriaModal.value);
+  if (activeCategoriaModal.value === 'Servicios') {
+    lista = lista.filter(p => p.es_servicio);
+  } else if (activeCategoriaModal.value !== 'Todos') {
+    lista = lista.filter(p => !p.es_servicio && (p.tienda || 'General') === activeCategoriaModal.value);
   }
   if (busquedaModal.value.trim()) {
     const q = busquedaModal.value.toLowerCase();
-    lista = lista.filter(p => p.nombre.toLowerCase().includes(q));
+    lista = lista.filter(p => p.nombre.toLowerCase().includes(q) || (p.codigo_barras || '').toLowerCase().includes(q));
   }
   return lista;
 });
