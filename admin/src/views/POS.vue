@@ -10,11 +10,17 @@
             <h2 class="text-base font-bold text-gray-800 dark:text-white">Venta Actual</h2>
             <p class="text-[11px] text-brand-600 font-medium">
               Orden #{{ currentOrderNum }}
+              <span v-if="cotizacionActual" class="ml-1 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">{{ cotizacionActual.folio }}</span>
             </p>
           </div>
+          <div class="flex items-center gap-3">
+          <button @click="abrirCotizaciones" class="text-gray-400 hover:text-brand-600 transition-colors" title="Cotizaciones guardadas">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </button>
           <button @click="clearCart" class="text-gray-400 hover:text-error-500 transition-colors" title="Limpiar orden">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
+          </div>
         </div>
 
         <!-- Cart Items -->
@@ -67,7 +73,7 @@
               :disabled="cart.length === 0"
               :class="{ 'opacity-40 cursor-not-allowed': cart.length === 0 }"
               class="w-11 h-11 shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-brand-600 transition-all flex items-center justify-center shadow-sm"
-              title="Descargar Cotización PDF"
+              title="Guardar cotización y descargar PDF"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </button>
@@ -376,6 +382,35 @@
     </Teleport>
     <!-- ═══ MODAL: Clear Cart Confirmation ═══ -->
     <Teleport to="body">
+      <!-- Modal: Cotizaciones guardadas (issue #22) -->
+      <div v-if="showCotizacionesModal" class="fixed inset-0 z-[1000000] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showCotizacionesModal = false"></div>
+        <div class="relative w-full max-w-2xl max-h-[80vh] flex flex-col bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 animate-modal-in">
+          <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white shrink-0">Cotizaciones</h3>
+            <input v-model="cotizacionesQuery" @input="buscarCotizaciones" type="text" placeholder="Buscar por folio, cliente o teléfono"
+              class="flex-1 h-10 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+            <button @click="showCotizacionesModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          </div>
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <p v-if="cargandoCotizaciones" class="p-6 text-center text-sm text-gray-400">Cargando…</p>
+            <p v-else-if="cotizaciones.length === 0" class="p-6 text-center text-sm text-gray-400">No hay cotizaciones guardadas.</p>
+            <div v-for="c in cotizaciones" :key="c.id" class="px-4 py-3 border-b border-gray-50 dark:border-gray-800 flex items-center gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-gray-800 dark:text-white">
+                  {{ c.folio }}
+                  <span class="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded" :class="c.estado === 'Cobrada' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'">{{ c.estado }}</span>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ c.nombre || 'Sin cliente' }}<span v-if="c.telefono"> · {{ c.telefono }}</span> · {{ new Date(c.created_at).toLocaleDateString('es-MX') }} · {{ c.items.length }} concepto(s)</p>
+              </div>
+              <span class="text-sm font-black text-gray-800 dark:text-white shrink-0">{{ formatCurrency(c.total) }}</span>
+              <button @click="descargarPdfCotizacion(c)" class="shrink-0 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">PDF</button>
+              <button v-if="c.estado === 'Abierta'" @click="cargarCotizacion(c)" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-[#2D5A5A] text-white text-xs font-semibold hover:bg-[#244a4a]">Abrir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-if="showClearModal" class="fixed inset-0 z-[1000000] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showClearModal = false"></div>
         <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-gray-700 animate-modal-in text-center">
@@ -1045,6 +1080,7 @@ const clearCart = () => {
 const confirmClearCart = () => {
   cart.value = [];
   showClearModal.value = false;
+  cotizacionActual.value = null;
   prefilledClientInfo.value = { nombre: '', telefono: '' };
 };
 
@@ -1160,6 +1196,13 @@ const processPayment = async () => {
     
     const savedOrder = await res.json();
 
+    // Si la venta viene de una cotización guardada, marcarla como cobrada (issue #22)
+    if (cotizacionActual.value) {
+      fetch(`${API_BASE}/api/cotizaciones/${cotizacionActual.value.id}/cobrar`, {
+        method: 'PUT', headers: apiHeaders(), body: JSON.stringify({ pedido_id: savedOrder.id }),
+      }).catch(e => console.error('No se pudo marcar la cotización como cobrada', e));
+    }
+
     const clientName = paymentData.value.nombre?.trim() || 'Público General';
     confirmedOrder.value = {
       orderNum: savedOrder.orden,
@@ -1191,10 +1234,107 @@ const processPayment = async () => {
   }
 };
 
-// ── Generador de Cotización PDF ──────────────────────────────────────────
-const generateQuote = () => {
+// ── Cotizaciones guardadas (issue #22) ──────────────────────────────────
+type CotizacionItem = { id: any; nombre: string; variante: string | null; variacion_id: any; precio: number; cantidad: number; imagen: string | null; es_servicio: boolean };
+const cotizacionActual = ref<{ id: number; folio: string; nombre: string | null; telefono: string | null } | null>(null);
+const showCotizacionesModal = ref(false);
+const cotizaciones = ref<any[]>([]);
+const cotizacionesQuery = ref('');
+const cargandoCotizaciones = ref(false);
+let cotizacionesTimeout: any = null;
+
+const apiHeaders = () => {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token.value) h['Authorization'] = `Bearer ${token.value}`;
+  return h;
+};
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+const cartToCotizacionItems = (): CotizacionItem[] => cart.value.map(item => ({
+  id: item.producto.id,
+  nombre: item.producto.nombre,
+  variante: item.variacionSeleccionada?.valor || null,
+  variacion_id: item.variacionSeleccionada?.id ?? null,
+  precio: parseFloat(item.variacionSeleccionada ? item.variacionSeleccionada.precio : item.producto.precio) || 0,
+  cantidad: item.cantidad,
+  imagen: item.producto.imagen_url || null,
+  es_servicio: !!item.producto.es_servicio,
+}));
+
+const fetchCotizaciones = async () => {
+  cargandoCotizaciones.value = true;
+  try {
+    const q = encodeURIComponent(cotizacionesQuery.value.trim());
+    const res = await fetch(`${API_BASE}/api/cotizaciones?q=${q}`, { headers: apiHeaders() });
+    cotizaciones.value = res.ok ? await res.json() : [];
+  } catch (e) {
+    console.error('Error al cargar cotizaciones', e);
+    cotizaciones.value = [];
+  } finally {
+    cargandoCotizaciones.value = false;
+  }
+};
+
+const abrirCotizaciones = () => {
+  showCotizacionesModal.value = true;
+  fetchCotizaciones();
+};
+
+const buscarCotizaciones = () => {
+  clearTimeout(cotizacionesTimeout);
+  cotizacionesTimeout = setTimeout(fetchCotizaciones, 300);
+};
+
+// Carga la cotización en el carrito para editarla o cobrarla
+const cargarCotizacion = (c: any) => {
+  cart.value = (c.items as CotizacionItem[]).map(it => ({
+    producto: { id: it.id, nombre: it.nombre, precio: it.precio, imagen_url: it.imagen || '', es_servicio: it.es_servicio },
+    cantidad: it.cantidad,
+    variacionSeleccionada: it.variante ? { id: it.variacion_id, valor: it.variante, precio: it.precio } : null,
+  }));
+  cotizacionActual.value = { id: c.id, folio: c.folio, nombre: c.nombre, telefono: c.telefono };
+  prefilledClientInfo.value = { nombre: c.nombre || '', telefono: c.telefono || '' };
+  showCotizacionesModal.value = false;
+  showToast(`Cotización ${c.folio} cargada`);
+};
+
+const descargarPdfCotizacion = (c: any) => {
+  buildQuotePdf(c.folio, c.nombre, c.telefono, c.items, new Date(c.created_at));
+};
+
+// Guarda (o actualiza) la cotización del carrito y descarga su PDF
+const generateQuote = async () => {
   if (cart.value.length === 0) return;
 
+  const nombreDefault = cotizacionActual.value?.nombre || prefilledClientInfo.value.nombre || '';
+  const nombre = window.prompt('Nombre del cliente para la cotización (opcional):', nombreDefault);
+  if (nombre === null) return; // cancelado
+  const telefono = cotizacionActual.value?.telefono || prefilledClientInfo.value.telefono || null;
+  const items = cartToCotizacionItems();
+
+  try {
+    const editando = cotizacionActual.value;
+    const res = await fetch(`${API_BASE}/api/cotizaciones${editando ? `/${editando.id}` : ''}`, {
+      method: editando ? 'PUT' : 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ nombre, telefono, items }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'No se pudo guardar la cotización');
+    }
+    const saved = await res.json();
+    cotizacionActual.value = { id: saved.id, folio: saved.folio, nombre: saved.nombre, telefono: saved.telefono };
+    showToast(`Cotización ${saved.folio} guardada`);
+    buildQuotePdf(saved.folio, saved.nombre, saved.telefono, saved.items, new Date(saved.created_at));
+  } catch (e: any) {
+    console.error(e);
+    alert(e.message || 'No se pudo guardar la cotización');
+  }
+};
+
+// ── Generador de Cotización PDF ──────────────────────────────────────────
+const buildQuotePdf = (folio: string, cliente: string | null, telefono: string | null, items: CotizacionItem[], fecha: Date) => {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
 
@@ -1208,13 +1348,14 @@ const generateQuote = () => {
   doc.text('Cotización', pageW - 14, 14, { align: 'right' });
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Folio: COT-${currentOrderNum.value}`, pageW - 14, 22, { align: 'right' });
+  doc.text(`Folio: ${folio}`, pageW - 14, 22, { align: 'right' });
 
   // Sub-info
   doc.setTextColor(...SANSAH_COLORS.negro);
   doc.setFontSize(9);
-  doc.text(`Fecha: ${new Date().toLocaleDateString('es-MX')}`, 14, 42);
-  doc.text('Esta cotización no representa una venta confirmada.', 14, 49);
+  doc.text(`Fecha: ${fecha.toLocaleDateString('es-MX')}`, 14, 40);
+  if (cliente) doc.text(`Cliente: ${cliente}${telefono ? ` · Tel. ${telefono}` : ''}`, 14, 45);
+  doc.text('Esta cotización no representa una venta confirmada.', 14, 50);
 
   // Línea naranja
   doc.setDrawColor(...SANSAH_COLORS.naranja);
@@ -1222,17 +1363,12 @@ const generateQuote = () => {
   doc.line(14, 53, pageW - 14, 53);
 
   // Tabla de productos
-  const rows = cart.value.map(item => {
-    const unitario = item.variacionSeleccionada
-      ? parseFloat(item.variacionSeleccionada.precio) || 0
-      : parseFloat(item.producto.precio) || 0;
-    return [
-      item.producto.nombre + (item.variacionSeleccionada ? `\n  ${item.variacionSeleccionada.valor}` : ''),
-      String(item.cantidad),
-      formatCurrency(unitario),
-      formatCurrency(unitario * item.cantidad)
-    ];
-  });
+  const rows = items.map(item => [
+    item.nombre + (item.variante ? `\n  ${item.variante}` : ''),
+    String(item.cantidad),
+    formatCurrency(item.precio),
+    formatCurrency(item.precio * item.cantidad)
+  ]);
 
   autoTable(doc, {
     head: [['Producto', 'Cant.', 'Precio Unitario', 'Subtotal']],
@@ -1256,7 +1392,7 @@ const generateQuote = () => {
 
   // Totales al final
   const finalY = (doc as any).lastAutoTable.finalY + 8;
-  const total = subtotal.value;
+  const total = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
 
   // Total box naranja
   doc.setFillColor(...SANSAH_COLORS.naranja);
@@ -1276,7 +1412,7 @@ const generateQuote = () => {
   doc.setFont('helvetica', 'normal');
   doc.text('Sansah Bikes® — Esta cotización tiene una vigencia de 7 días.', pageW / 2, pageH - 3, { align: 'center' });
 
-  doc.save(`cotizacion_sansah_${currentOrderNum.value}.pdf`);
+  doc.save(`cotizacion_sansah_${folio}.pdf`);
 };
 
 const imprimirTicketVenta = () => {
@@ -1296,6 +1432,7 @@ const imprimirTicketVenta = () => {
 const closeConfirmationModal = () => {
   showConfirmationModal.value = false;
   cart.value = [];
+  cotizacionActual.value = null;
   currentOrderNum.value = Math.floor(Math.random() * 9000) + 1000;
   paymentData.value = { method: '', nombre: '', telefono: '' };
   prefilledClientInfo.value = { nombre: '', telefono: '' };
