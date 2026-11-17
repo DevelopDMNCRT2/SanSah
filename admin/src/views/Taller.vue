@@ -595,6 +595,9 @@ const refaccionesList = computed(() => {
           ...p,
           key: `${p.id}-${v.id}`,
           nombre: `${p.nombre} - ${v.valor}`,
+          nombre_producto: p.nombre,   // nombre real: el servidor descuenta stock por nombre + variante
+          variante: v.valor,
+          variacion_id: v.id,
           precio: v.precio ?? p.precio,
           stock: v.stock,
           imagen_url: v.imagen_url || p.imagen_url,
@@ -724,7 +727,12 @@ const seleccionarRefaccionBuscada = (refaccion) => {
     id: refaccion.id,
     nombre: refaccion.nombre,
     precio: parseFloat(refaccion.precio) || 0,
-    imagen_url: refaccion.imagen_url || null
+    imagen_url: refaccion.imagen_url || null,
+    ...(refaccion.variante ? {
+      nombre_producto: refaccion.nombre_producto,
+      variante: refaccion.variante,
+      variacion_id: refaccion.variacion_id,
+    } : {})
   });
 };
 
