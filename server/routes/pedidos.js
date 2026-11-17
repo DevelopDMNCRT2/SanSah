@@ -7,6 +7,10 @@ const { sendEmail } = require('../utils/email');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'y0uR_SuP3r_s3cR3t_jWt_K3y_2026_SanSah';
 
+// Correo genérico que usa el POS cuando no hay correo real del comprador
+const POS_DUMMY_EMAIL = 'pos@sansah.com';
+const MOSTRADOR_NOMBRES = ['mostrador', 'cliente mostrador', 'público general', 'publico general'];
+
 // Genera un código único de 5 caracteres alfanuméricos para nuevos clientes
 async function generarCodigo() {
   let codigo, existe = true;
@@ -77,17 +81,42 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const nombreReal = nombre || 'Cliente Mostrador';
+    const nombreReal = (nombre || '').trim() || 'Cliente Mostrador';
     let cliente = null;
 
-    if (correo) {
+    // El POS envía un correo genérico; no debe usarse para identificar al cliente,
+    // si no todas las ventas quedan ligadas al cliente "Mostrador" (issue #24).
+    const correoReal = correo && correo.trim().toLowerCase() !== POS_DUMMY_EMAIL ? correo.trim() : null;
+    const esMostrador = MOSTRADOR_NOMBRES.includes(nombreReal.toLowerCase());
+
+    const clienteIdBody = parseInt(req.body.cliente_id);
+    if (clienteIdBody) {
+      cliente = await prisma.cliente.findUnique({ where: { id: clienteIdBody } });
+    }
+
+    if (cliente) {
+      if (telefono && !cliente.telefono) {
+        cliente = await prisma.cliente.update({ where: { id: cliente.id }, data: { telefono } });
+      }
+    } else if (esMostrador && !correoReal) {
+      cliente = await prisma.cliente.findUnique({ where: { correo: POS_DUMMY_EMAIL } })
+        || await prisma.cliente.findFirst({ where: { nombre: { equals: nombreReal, mode: 'insensitive' } } });
+      if (!cliente) {
+        const codigo = await generarCodigo();
+        cliente = await prisma.cliente.create({ data: { codigo, nombre: 'Mostrador', correo: POS_DUMMY_EMAIL } });
+      }
+    } else if (correoReal) {
+      const correo = correoReal;
       cliente = await prisma.cliente.findUnique({ where: { correo } });
       if (!cliente) {
         const codigo = await generarCodigo();
         cliente = await prisma.cliente.create({ data: { codigo, nombre: nombreReal, correo, telefono } });
       }
     } else {
-      cliente = await prisma.cliente.findFirst({ where: { nombre: nombreReal } });
+      cliente = await prisma.cliente.findFirst({
+        where: { nombre: { equals: nombreReal, mode: 'insensitive' } },
+        orderBy: { id: 'asc' }
+      });
       if (!cliente) {
         const codigo = await generarCodigo();
         cliente = await prisma.cliente.create({ data: { codigo, nombre: nombreReal, correo: null, telefono } });

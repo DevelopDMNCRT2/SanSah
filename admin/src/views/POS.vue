@@ -1083,7 +1083,11 @@ const buscarClientes = () => {
   }, 220);
 };
 
+// Cliente elegido del autocompletado; se envía su id para ligar la venta a ese cliente
+const clienteSeleccionado = ref<{ id: number; nombre: string } | null>(null);
+
 const seleccionarCliente = (c: any) => {
+  clienteSeleccionado.value = { id: c.id, nombre: c.nombre };
   paymentData.value.nombre = c.nombre;
   if (c.telefono) paymentData.value.telefono = c.telefono;
   clienteSugerencias.value = [];
@@ -1126,10 +1130,13 @@ const processPayment = async () => {
 
     const finalTotal = subtotal.value;
 
+    const nombreCliente = paymentData.value.nombre?.trim() || "Mostrador";
+    const sel = clienteSeleccionado.value;
     const payload = {
-      cliente_id: null,
-      nombre: paymentData.value.nombre?.trim() || "Mostrador",
-      correo: "pos@sansah.com", // dummy para POS
+      // Solo se manda el id si el nombre no se editó después de elegir al cliente
+      cliente_id: sel && sel.nombre.trim().toLowerCase() === nombreCliente.toLowerCase() ? sel.id : null,
+      nombre: nombreCliente,
+      correo: null, // el POS no captura correo; el backend liga por cliente_id o nombre
       telefono: paymentData.value.telefono?.trim() || null,
       ciudad: "Local",
       domicilio: "Tienda Física",
@@ -1298,6 +1305,7 @@ const closeConfirmationModal = () => {
   cart.value = [];
   currentOrderNum.value = Math.floor(Math.random() * 9000) + 1000;
   paymentData.value = { method: '', nombre: '', telefono: '' };
+  clienteSeleccionado.value = null;
   prefilledClientInfo.value = { nombre: '', telefono: '' };
   fetchProductos();
 };
