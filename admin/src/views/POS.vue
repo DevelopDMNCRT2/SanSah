@@ -913,15 +913,20 @@ onMounted(() => {
       // 2. Añadir las refacciones extra (si existen)
       if (Array.isArray(srv.piezas)) {
         srv.piezas.forEach((pieza: any) => {
+          // Piezas con variación (issue #21): se envían con nombre real + variante
+          // para que el servidor descuente el stock de la variación correcta.
+          const precio = parseFloat(pieza.precio) || 0;
           cart.value.push({
             producto: {
               id: pieza.id,
-              nombre: pieza.nombre,
-              precio: parseFloat(pieza.precio) || 0,
+              nombre: pieza.variante ? (pieza.nombre_producto || pieza.nombre) : pieza.nombre,
+              precio,
               imagen_url: pieza.imagen_url || ''
             },
             cantidad: 1,
-            variacionSeleccionada: null
+            variacionSeleccionada: pieza.variante
+              ? { id: pieza.variacion_id, valor: pieza.variante, precio }
+              : null
           });
         });
       }
