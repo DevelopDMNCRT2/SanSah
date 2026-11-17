@@ -4,6 +4,30 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { requireAuth } = require('./auth');
 
+// Zona horaria del negocio (issue #23). El servidor en producción corre en UTC,
+// así que el rango del día debe calcularse en hora de México, no en la del servidor.
+const BUSINESS_TZ = process.env.BUSINESS_TZ || 'America/Mexico_City';
+
+// Offset (ms) de la zona `tz` respecto a UTC en el instante `date`.
+function tzOffsetMs(date, tz) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).formatToParts(date).map(p => [p.type, p.value])
+  );
+  const asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  return asUtc - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+// Medianoche (inicio del día) de `fecha` (YYYY-MM-DD) en la zona `tz`, como Date UTC.
+function inicioDelDia(fecha, tz) {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const guess = new Date(Date.UTC(y, m - 1, d));
+  return new Date(guess.getTime() - tzOffsetMs(guess, tz));
+}
+
 // GET /api/corte — Obtener el corte de caja de un día específico
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -12,8 +36,14 @@ router.get('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Falta el parámetro fecha (YYYY-MM-DD)' });
     }
 
-    const start = new Date(fecha + 'T00:00:00.000');
-    const end = new Date(fecha + 'T23:59:59.999');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      return res.status(400).json({ error: 'Formato de fecha inválido (YYYY-MM-DD)' });
+    }
+
+    const start = inicioDelDia(fecha, BUSINESS_TZ);
+    const [y, m, d] = fecha.split('-').map(Number);
+    const siguiente = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+    const end = inicioDelDia(siguiente, BUSINESS_TZ);
 
     const isUserAdmin = (req.user && req.user.rol === 'Administrador');
 
@@ -21,7 +51,7 @@ router.get('/', requireAuth, async (req, res) => {
     const whereClause = {
       created_at: {
         gte: start,
-        lte: end
+        lt: end
       },
       estado: {
         notIn: ['Cancelado', 'Devuelto']
