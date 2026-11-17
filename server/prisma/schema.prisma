@@ -214,3 +214,20 @@ model CompraItem {
   @@map("compra_items")
 }
 
+
+// Issue #22 — Cotizaciones guardadas (POS / taller)
+model Cotizacion {
+  id         Int      @id @default(autoincrement())
+  folio      String   @unique                 // "COT-1001"
+  nombre     String?                          // Cliente (texto libre)
+  telefono   String?
+  items      Json                             // Snapshot del carrito
+  total      Float
+  estado     String   @default("Abierta")     // Abierta | Cobrada
+  pedido_id  Int?                             // Pedido generado al cobrarla
+  usuario_id Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("cotizaciones")
+}

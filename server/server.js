@@ -15,6 +15,7 @@ const mercadopagoRouter= require('./routes/mercadopago');
 const gastosRouter     = require('./routes/gastos');
 const corteRouter       = require('./routes/corte');
 const comprasRouter     = require('./routes/compras');
+const cotizacionesRouter = require('./routes/cotizaciones');
 const { router: authRouter } = require('./routes/auth');
 
 const app  = express();
@@ -41,6 +42,7 @@ app.use('/api/mercadopago',mercadopagoRouter);
 app.use('/api/gastos',     gastosRouter);
 app.use('/api/corte',      corteRouter);
 app.use('/api/compras',    comprasRouter);
+app.use('/api/cotizaciones', cotizacionesRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
