@@ -244,15 +244,63 @@ export const generateThermalTicketDoc = (data: TicketData): jsPDF => {
   return doc;
 };
 
-export const printThermalTicket = (data: TicketData): void => {
+// Fallback: abre el PDF en una pestaña nueva con auto-impresión (comportamiento anterior).
+const printInNewWindow = (data: TicketData): void => {
   const doc = generateThermalTicketDoc(data);
   doc.autoPrint();
-
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-
+  const url = URL.createObjectURL(doc.output('blob'));
   const printWindow = window.open(url, '_blank');
   if (!printWindow) {
     doc.save(`ticket_${data.orderNum}.pdf`);
   }
+};
+
+/**
+ * Issue #25 — Imprime el ticket sin abrir una pestaña nueva.
+ *
+ * El PDF se carga en un iframe oculto dentro de la misma pantalla y se manda a
+ * imprimir desde ahí. El navegador sigue mostrando su diálogo de impresión,
+ * salvo que Chrome/Edge se abra con `--kiosk-printing` (ver docs/IMPRESION_TICKETS.md),
+ * en cuyo caso imprime directo a la impresora predeterminada.
+ */
+export const printThermalTicket = (data: TicketData): void => {
+  const doc = generateThermalTicketDoc(data);
+  const url = URL.createObjectURL(doc.output('blob'));
+
+  // Quitar un iframe de una impresión anterior, si quedó
+  document.getElementById('sansah-ticket-print-frame')?.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'sansah-ticket-print-frame';
+  iframe.setAttribute('aria-hidden', 'true');
+  Object.assign(iframe.style, {
+    position: 'fixed', right: '0', bottom: '0', width: '0', height: '0', border: '0', visibility: 'hidden',
+  });
+
+  let printed = false;
+  iframe.onload = () => {
+    if (printed) return;
+    printed = true;
+    // Pequeña espera para que el visor de PDF termine de renderizar
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        // Navegadores que no permiten imprimir PDFs en iframes (p. ej. Safari)
+        console.warn('Impresión en iframe no disponible, abriendo pestaña', e);
+        iframe.remove();
+        printInNewWindow(data);
+        return;
+      }
+      // Limpiar después de que se cierre el diálogo
+      setTimeout(() => {
+        iframe.remove();
+        URL.revokeObjectURL(url);
+      }, 60_000);
+    }, 250);
+  };
+
+  iframe.src = url;
+  document.body.appendChild(iframe);
 };
