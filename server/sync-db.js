@@ -1,9 +1,18 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
-const neonUrl = 'postgresql://neondb_owner:npg_YNolGwLP23bS@ep-withered-rice-ax3rfc6a-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require';
+const sourceDatabaseUrl = process.env.SOURCE_DATABASE_URL;
+
+if (!sourceDatabaseUrl) {
+  console.error('❌ Error de configuración: La variable de entorno SOURCE_DATABASE_URL no está definida.');
+  console.error('Por favor define SOURCE_DATABASE_URL en tu archivo .env o en el entorno del sistema antes de ejecutar este script.');
+  process.exit(1);
+}
 
 const neonPrisma = new PrismaClient({
-  datasources: { db: { url: neonUrl } }
+  datasources: { db: { url: sourceDatabaseUrl } }
 });
 
 const localPrisma = new PrismaClient();
